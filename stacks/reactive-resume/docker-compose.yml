@@ -1,0 +1,118 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reactive-resume-postgres
+    restart: unless-stopped
+    networks:
+      - internal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: reactive-resume-minio
+    restart: unless-stopped
+    command: server /data
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.rr-storage.rule=Host(`resume-storage.local.nelsonhickman.com`)"
+      - "traefik.http.routers.rr-storage.entrypoints=https"
+      - "traefik.http.routers.rr-storage.tls=true"
+      - "traefik.http.routers.rr-storage.tls.certresolver=cloudflare"
+      - "traefik.http.services.rr-storage.loadbalancer.server.port=9000"
+
+  chrome:
+    image: ghcr.io/browserless/chromium:v2.18.0
+    container_name: reactive-resume-chrome
+    restart: unless-stopped
+    networks:
+      - internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TIMEOUT: 10000
+      CONCURRENT: 10
+      TOKEN: ${CHROME_TOKEN}
+      EXIT_ON_HEALTH_FAILURE: "true"
+      PRE_REQUEST_HEALTH_CHECK: "true"
+
+  app:
+    image: amruthpillai/reactive-resume:latest
+    container_name: reactive-resume
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - minio
+      - chrome
+    networks:
+      - internal
+      - proxy
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+
+      PUBLIC_URL: https://resume.local.nelsonhickman.com
+      STORAGE_URL: https://resume-storage.local.nelsonhickman.com/default
+
+      CHROME_TOKEN: ${CHROME_TOKEN}
+      CHROME_URL: ws://chrome:3000
+
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+
+      MAIL_FROM: ${MAIL_FROM}
+      # SMTP_URL: ${SMTP_URL}
+
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_REGION: us-east-1
+      STORAGE_BUCKET: default
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      STORAGE_USE_SSL: "false"
+      STORAGE_SKIP_BUCKET_CHECK: "false"
+
+      # Optional:
+      # DISABLE_SIGNUPS: ${DISABLE_SIGNUPS}
+      # DISABLE_EMAIL_AUTH: ${DISABLE_EMAIL_AUTH}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.rr.rule=Host(`resume.local.nelsonhickman.com`)"
+      - "traefik.http.routers.rr.entrypoints=https"
+      - "traefik.http.routers.rr.tls=true"
+      - "traefik.http.routers.rr.tls.certresolver=cloudflare"
+      - "traefik.http.services.rr.loadbalancer.server.port=3000"
+
+volumes:
+  minio_data:
+  postgres_data:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge

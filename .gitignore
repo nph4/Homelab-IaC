@@ -6,6 +6,7 @@
 # Secrets
 secrets/
 **/secrets/
+!**/secrets/*-example
 
 # Runtime data
 data/

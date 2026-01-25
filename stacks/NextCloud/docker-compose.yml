@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  nextcloud-db:
+    image: postgres:16
+    container_name: nextcloud-db
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - nextcloud-db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD_FILE: /run/secrets/nextcloud_db_password
+    secrets:
+      - nextcloud_db_password
+
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - nextcloud-redis:/data
+
+  nextcloud:
+    image: nextcloud:31-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    networks:
+      - proxy
+    depends_on:
+      - nextcloud-db
+      - nextcloud-redis
+    volumes:
+      - nextcloud-data:/var/www/html
+    environment:
+      TZ: America/Los_Angeles
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.nelsonhickman.com`)"
+      - "traefik.http.routers.nextcloud.entrypoints=https"
+      - "traefik.http.routers.nextcloud.tls=true"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+      - "traefik.http.routers.nextcloud.middlewares=default-headers@file,https-redirectscheme@file"
+
+  nextcloud-cron:
+    image: nextcloud:31-apache
+    container_name: nextcloud-cron
+    restart: unless-stopped
+    networks:
+      - proxy
+    depends_on:
+      - nextcloud
+    volumes:
+      - nextcloud-data:/var/www/html
+    entrypoint: /cron.sh
+
+secrets:
+  nextcloud_db_password:
+    file: ./secrets/nextcloud_db_password.txt
+
+volumes:
+  nextcloud-db:
+  nextcloud-redis:
+  nextcloud-data:
+
+networks:
+  proxy:
+    external: true
