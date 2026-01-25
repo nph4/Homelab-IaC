@@ -1,0 +1,19 @@
+# Env files
+.env
+*.env
+.env.*
+
+# Secrets
+secrets/
+**/secrets/
+
+# Runtime data
+data/
+volumes/
+backups/
+
+# Editor/OS noise
+*~
+*.swp
+.DS_Store
+

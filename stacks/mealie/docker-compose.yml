@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:latest
+    container_name: mealie
+    restart: unless-stopped
+
+    networks:
+      - proxy
+
+    volumes:
+      - mealie-data:/app/data/
+
+    # Load secrets + overrides from local file (NOT committed)
+    env_file:
+      - .env
+
+    environment:
+      ALLOW_SIGNUP: "true"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/Los_Angeles"
+      MAX_WORKERS: "1"
+      WEB_CONCURRENCY: "1"
+      BASE_URL: "https://mealie.nelsonhickman.com"
+
+      # SMTP (values come from .env)
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME}"
+      SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      SMTP_AUTH_STRATEGY: "${SMTP_AUTH_STRATEGY}"
+
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mealie.rule=Host(`mealie.local.nelsonhickman.com`) || Host(`mealie.nelsonhickman.com`)"
+      - "traefik.http.routers.mealie.entrypoints=https"
+      - "traefik.http.routers.mealie.tls=true"
+      - "traefik.http.routers.mealie.tls.certresolver=cloudflare"
+      - "traefik.http.services.mealie.loadbalancer.server.port=9000"
+
+volumes:
+  mealie-data:
+    driver: local
+
+networks:
+  proxy:
+    external: true
