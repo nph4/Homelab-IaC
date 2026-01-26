@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  vert:
+    image: ghcr.io/vert-sh/vert:latest
+    container_name: vert
+    restart: unless-stopped
+
+    networks:
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.vert.rule=Host(`vert.local.nelsonhickman.com`)"
+      - "traefik.http.routers.vert.entrypoints=https"
+      - "traefik.http.routers.vert.tls=true"
+      - "traefik.http.routers.vert.tls.certresolver=cloudflare"
+
+      # Optional: if you want your standard headers middleware
+      # - "traefik.http.routers.vert.middlewares=default-headers@file"
+
+      - "traefik.http.services.vert.loadbalancer.server.port=80"
+
+networks:
+  proxy:
+    external: true

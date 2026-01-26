@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  unifi:
+    image: docker.io/jacobalberty/unifi:latest
+    container_name: unifi
+    restart: unless-stopped
+
+    environment:
+      TZ: "America/Los_Angeles"
+      # Optional: make explicit (the image defaults already include these)
+      UNIFI_UID: "999"
+      UNIFI_GID: "999"
+
+    volumes:
+      - /home/nelson/unifi:/unifi
+      - unifi-run:/unifi/run
+
+    ports:
+      - "3478:3478/udp"
+      - "8080:8080/tcp"
+      - "8443:8443/tcp"
+
+volumes:
+  unifi-run:
+    driver: local
