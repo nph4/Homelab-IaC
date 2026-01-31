@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  dashy:
+    image: lissy93/dashy
+    container_name: dashy
+    restart: unless-stopped
+
+    volumes:
+      - /home/nelson/containers/dashy/my-config.yml:/app/user-data/conf.yml:ro
+
+    environment:
+      NODE_ENV: production
+
+    networks:
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.dashy.rule=Host(`dashy.local.nelsonhickman.com`)"
+      - "traefik.http.routers.dashy.entrypoints=https"
+      - "traefik.http.routers.dashy.tls=true"
+      - "traefik.http.routers.dashy.tls.certresolver=cloudflare"
+      - "traefik.http.services.dashy.loadbalancer.server.port=8080"
+
+    healthcheck:
+      test: ["CMD", "node", "/app/services/healthcheck"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  proxy:
+    external: true

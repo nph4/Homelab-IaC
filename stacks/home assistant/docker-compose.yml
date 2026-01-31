@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    privileged: true
+
+    networks:
+      - proxy
+
+    volumes:
+      - /home/nelson/containers/home_assist:/config
+      - /etc/localtime:/etc/localtime:ro
+
+    # Stable Z-Wave USB device access
+    devices:
+      - /dev/serial/by-id:/dev/serial/by-id
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.local.nelsonhickman.com`)"
+      - "traefik.http.routers.homeassistant.entrypoints=https"
+      - "traefik.http.routers.homeassistant.tls=true"
+      - "traefik.http.routers.homeassistant.tls.certresolver=cloudflare"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+
+networks:
+  proxy:
+    external: true
