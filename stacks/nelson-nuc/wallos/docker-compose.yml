@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   wallos:
-    image: ghcr.io/ellite/wallos:latest
+    image: ghcr.io/ellite/wallos:v4.6.2
     container_name: wallos
     restart: unless-stopped
 

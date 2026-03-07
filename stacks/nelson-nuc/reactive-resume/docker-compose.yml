@@ -20,7 +20,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-10-15T17-29-55Z
     container_name: reactive-resume-minio
     restart: unless-stopped
     command: server /data
@@ -57,7 +57,7 @@ services:
       PRE_REQUEST_HEALTH_CHECK: "true"
 
   app:
-    image: amruthpillai/reactive-resume:latest
+    image: amruthpillai/reactive-resume:v5.0.11
     container_name: reactive-resume
     restart: unless-stopped
     depends_on:

@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:latest
+    image: ghcr.io/mealie-recipes/mealie:v3.11.0
     container_name: mealie
     restart: unless-stopped
 
