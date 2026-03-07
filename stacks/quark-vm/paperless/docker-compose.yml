@@ -22,7 +22,7 @@ services:
       - /srv/paperless/pgdata:/var/lib/postgresql/data
 
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:v2.20.10
     container_name: paperless-ngx
     restart: unless-stopped
     depends_on:

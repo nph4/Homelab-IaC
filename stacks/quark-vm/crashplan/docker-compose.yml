@@ -35,7 +35,7 @@ services:
 
     hostname: "crashplan"
 
-    image: "jlesage/crashplan-pro"
+    image: "jlesage/crashplan-pro:v26.02.3"
 
     ipc: "private"
     restart: unless-stopped
