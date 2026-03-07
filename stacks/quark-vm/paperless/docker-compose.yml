@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  broker:
+    image: redis:7
+    container_name: paperless-redis
+    restart: unless-stopped
+    volumes:
+      - /srv/paperless/redis:/data
+
+  db:
+    image: postgres:16
+    container_name: paperless-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets:
+      - pg_password
+    volumes:
+      - /srv/paperless/pgdata:/var/lib/postgresql/data
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless-ngx
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    ports:
+      - "8010:8000"
+    environment:
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS_FILE: /run/secrets/pg_password
+      PAPERLESS_SECRET_KEY_FILE: /run/secrets/paperless_secret_key
+
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_TIME_ZONE: America/Los_Angeles
+      PAPERLESS_URL: https://paperless.local.nelsonhickman.com
+
+      PAPERLESS_CONSUMPTION_DIR: /usr/src/paperless/consume
+      PAPERLESS_EXPORT_DIR: /usr/src/paperless/export
+
+      USERMAP_UID: "1000"
+      USERMAP_GID: "1000"
+    secrets:
+      - pg_password
+      - paperless_secret_key
+    volumes:
+      - /srv/paperless/data:/usr/src/paperless/data
+      - /srv/paperless/media:/usr/src/paperless/media
+      - /srv/paperless/consume:/usr/src/paperless/consume
+      - /srv/paperless/export:/usr/src/paperless/export
+
+secrets:
+  pg_password:
+    file: /opt/stacks/paperless-ngx/secrets/pg_password
+  paperless_secret_key:
+    file: /opt/stacks/paperless-ngx/secrets/paperless_secret_key
