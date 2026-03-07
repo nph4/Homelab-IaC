@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    networks:
+      - proxy
+
+    # IMPORTANT: no docker.sock mount needed when using agents
+    environment:
+      DOZZLE_REMOTE_AGENT: 100.76.105.3:7007, 100.69.15.50:7007
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.dozzle.rule=Host(`dozzle.local.nelsonhickman.com`)"
+      - "traefik.http.routers.dozzle.entrypoints=https"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.tls.certresolver=cloudflare"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+
+networks:
+  proxy:
+    external: true
