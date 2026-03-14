@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   dashy:
-    image: lissy93/dashy
+    image: lissy93/dashy:3.1.9
     container_name: dashy
     restart: unless-stopped
 

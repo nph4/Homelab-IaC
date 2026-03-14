@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   jellyfin:
-    image: docker.io/linuxserver/jellyfin:10.11.6ubu2404-ls23
+    image: docker.io/linuxserver/jellyfin:10.11.6
     container_name: Jellyfin
     restart: unless-stopped
 

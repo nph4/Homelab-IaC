@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   it-tools:
-    image: corentinth/it-tools:v2024.10.22-7ca5933
+    image: corentinth/it-tools:2024.10.22-7ca5933
     container_name: it-tools
     restart: unless-stopped
     networks:

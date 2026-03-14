@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   homebox:
-    image: ghcr.io/sysadminsmedia/homebox:v0.24.1
+    image: ghcr.io/sysadminsmedia/homebox:0.24.1
     container_name: homebox
     restart: always
 
