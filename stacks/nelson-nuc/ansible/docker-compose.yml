@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  ansible:
+    image: peco602/ansible-linux-docker:latest
+    container_name: ansible
+    restart: unless-stopped
+
+    # Override the default one-shot CMD so the container stays running
+    command: ["tail", "-f", "/dev/null"]
+
+    volumes:
+      - /home/nelson/containers/ansible/data:/etc/ansible
+
+    networks:
+      - proxy
+
+  ansible-terminal:
+    image: tsl0922/ttyd:latest
+    container_name: ansible-terminal
+    restart: unless-stopped
+
+    # ttyd is the entrypoint; these args become the command it serves in the browser
+    command: ["docker", "exec", "-it", "ansible", "bash"]
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Docker binary path on the host — adjust if `which docker` differs on nelson-nuc
+      - /usr/bin/docker:/usr/bin/docker:ro
+
+    networks:
+      - proxy
+
+    depends_on:
+      - ansible
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.ansible.rule=Host(`ansible.local.nelsonhickman.com`)"
+      - "traefik.http.routers.ansible.entrypoints=https"
+      - "traefik.http.routers.ansible.tls=true"
+      - "traefik.http.routers.ansible.tls.certresolver=cloudflare"
+
+      - "traefik.http.services.ansible.loadbalancer.server.port=7681"
+
+networks:
+  proxy:
+    external: true
