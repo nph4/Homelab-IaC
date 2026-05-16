@@ -16,10 +16,6 @@ services:
       - "80:80"
       - "443:443"
 
-    # Make env usage explicit for Portainer/local deploys
-    env_file:
-      - .env
-
     environment:
       CF_DNS_API_TOKEN_FILE: /run/secrets/cf_api_token
       TRAEFIK_DASHBOARD_CREDENTIALS: "${TRAEFIK_DASHBOARD_CREDENTIALS}"

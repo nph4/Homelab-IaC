@@ -12,10 +12,6 @@ services:
     volumes:
       - mealie-data:/app/data/
 
-    # Load secrets + overrides from local file (NOT committed)
-    env_file:
-      - .env
-
     environment:
       ALLOW_SIGNUP: "true"
       PUID: "1000"

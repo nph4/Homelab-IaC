@@ -11,9 +11,6 @@ services:
     networks:
       - proxy
 
-    env_file:
-      - .env
-
     environment:
       TUNNEL_TOKEN: "${TUNNEL_TOKEN}"
 

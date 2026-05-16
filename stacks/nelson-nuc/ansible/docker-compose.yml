@@ -16,7 +16,7 @@ services:
       - proxy
 
   ansible-terminal:
-    image: tsl0922/ttyd:latest
+    image: tsl0922/ttyd:1.7.8
     container_name: ansible-terminal
     restart: unless-stopped
 
