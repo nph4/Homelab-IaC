@@ -54,4 +54,14 @@ services:
       # Router to catch only the root and apply redirect
       - "traefik.http.routers.traefik-root.entrypoints=https"
       - "traefik.http.routers.traefik-root.rule=Host(`traefik-dashboard.local.nelsonhickman.com`) && Path(`/`)"
-      - "traefik.http.rout
+      - "traefik.http.routers.traefik-root.middlewares=traefik-root-redirect"
+      - "traefik.http.routers.traefik-root.service=noop@internal"
+      - "traefik.http.routers.traefik-root.tls=true"
+
+secrets:
+  cf_api_token:
+    file: /home/nelson/containers/traefik/cf_api_token.txt
+
+networks:
+  proxy:
+    external: true

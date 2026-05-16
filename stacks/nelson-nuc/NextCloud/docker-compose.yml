@@ -61,7 +61,7 @@ services:
 
 secrets:
   nextcloud_db_password:
-    file: ./secrets/nextcloud_db_password.txt
+    file: /home/nelson/stacks/nextcloud/nextcloud_db_password.txt
 
 volumes:
   nextcloud-db:
