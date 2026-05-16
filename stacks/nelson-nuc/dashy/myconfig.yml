@@ -62,8 +62,7 @@ sections:
         id: 6_600_uptimekuma
       - title: Crashplan
         description: Code 42's backup utility
-        icon: >-
-          https://media.licdn.com/dms/image/v2/D560BAQH_NHDgbLeSGg/company-logo_200_200/company-logo_200_200/0/1731681767665/crashplan_logo?e=1770249600&v=beta&t=OLGM2VT-Yu470jXUiUbjFtFJKY8ncSqkPYm6_KRRSpc
+        icon: favicon
         url: https://crashplan.local.nelsonhickman.com/
         target: newtab
         statusCheck: true
@@ -197,8 +196,7 @@ sections:
         id: 1_841_namecheap
       - title: Crashplan Web Console
         description: Online console to restore data from
-        icon: >-
-          https://media.licdn.com/dms/image/v2/D560BAQH_NHDgbLeSGg/company-logo_200_200/company-logo_200_200/0/1731681767665/crashplan_logo?e=1770249600&v=beta&t=OLGM2VT-Yu470jXUiUbjFtFJKY8ncSqkPYm6_KRRSpc
+        icon: favicon
         url: https://www.crashplan.com/sign-in/
         target: newtab
         id: 2_841_crashplanwebconsole
