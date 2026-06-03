@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Days Since Last Incident</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      text-align: center;
+      padding: 3rem 4rem;
+      border: 2px solid #e94560;
+      border-radius: 12px;
+      background: #16213e;
+      box-shadow: 0 0 40px rgba(233, 69, 96, 0.2);
+      max-width: 480px;
+      width: 90%;
+    }
+
+    .heading {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      color: #888;
+      margin-bottom: 1.5rem;
+    }
+
+    .count {
+      font-size: 9rem;
+      font-weight: 800;
+      color: #e94560;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    }
+
+    .days-label {
+      font-size: 1.4rem;
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      color: #aaa;
+      margin-top: 0.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .since {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 2.5rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    button {
+      background: transparent;
+      color: #e94560;
+      border: 1px solid #e94560;
+      padding: 0.65rem 2rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    button:hover {
+      background: #e94560;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="heading">Days Since Last Incident</div>
+    <div class="count">{{ days }}</div>
+    <div class="days-label">Days</div>
+    <div class="since">Last incident: {{ last_reset }}</div>
+    <form method="post" action="/reset" onsubmit="return confirm('Reset counter to zero?')">
+      <button type="submit">Reset Counter</button>
+    </form>
+  </div>
+</body>
+</html>

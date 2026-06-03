@@ -1,0 +1,32 @@
+services:
+  days-since-incident:
+    image: days-since-incident:1.0.0
+    build: .
+    container_name: days-since-incident
+    restart: unless-stopped
+
+    volumes:
+      - data:/data
+
+    networks:
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+
+      # Router
+      - "traefik.http.routers.days-since-incident.rule=Host(`days-since.local.nelsonhickman.com`)"
+      - "traefik.http.routers.days-since-incident.entrypoints=https"
+      - "traefik.http.routers.days-since-incident.tls=true"
+      - "traefik.http.routers.days-since-incident.tls.certresolver=cloudflare"
+
+      # Service
+      - "traefik.http.services.days-since-incident.loadbalancer.server.port=5000"
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  proxy:
+    external: true
