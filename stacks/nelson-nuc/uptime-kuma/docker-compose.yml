@@ -5,6 +5,10 @@ services:
     image: louislam/uptime-kuma:2.2.0
     container_name: uptime-kuma
     restart: always
+
+    environment:
+      TZ: America/Los_Angeles
+
     networks:
       - proxy
     volumes:

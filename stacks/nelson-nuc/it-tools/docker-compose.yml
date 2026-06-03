@@ -5,6 +5,10 @@ services:
     image: corentinth/it-tools:2024.10.22-7ca5933
     container_name: it-tools
     restart: unless-stopped
+
+    environment:
+      TZ: America/Los_Angeles
+
     networks:
       - proxy
     labels:

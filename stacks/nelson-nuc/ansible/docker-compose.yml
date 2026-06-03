@@ -9,6 +9,9 @@ services:
     # Override the default one-shot CMD so the container stays running
     command: ["tail", "-f", "/dev/null"]
 
+    environment:
+      - TZ=America/Los_Angeles
+
     volumes:
       - /home/nelson/containers/ansible/data:/etc/ansible
 
@@ -22,6 +25,9 @@ services:
 
     # ttyd is the entrypoint; these args become the command it serves in the browser
     command: ["docker", "exec", "-it", "ansible", "bash"]
+
+    environment:
+      - TZ=America/Los_Angeles
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

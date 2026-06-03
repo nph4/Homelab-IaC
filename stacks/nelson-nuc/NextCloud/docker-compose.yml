@@ -10,6 +10,7 @@ services:
     volumes:
       - nextcloud-db:/var/lib/postgresql/data
     environment:
+      TZ: America/Los_Angeles
       POSTGRES_DB: nextcloud
       POSTGRES_USER: nextcloud
       POSTGRES_PASSWORD_FILE: /run/secrets/nextcloud_db_password
@@ -22,6 +23,8 @@ services:
     restart: unless-stopped
     networks:
       - proxy
+    environment:
+      TZ: America/Los_Angeles
     volumes:
       - nextcloud-redis:/data
 
@@ -55,6 +58,8 @@ services:
       - proxy
     depends_on:
       - nextcloud
+    environment:
+      TZ: America/Los_Angeles
     volumes:
       - nextcloud-data:/var/www/html
     entrypoint: /cron.sh

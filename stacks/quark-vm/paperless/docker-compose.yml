@@ -5,6 +5,8 @@ services:
     image: redis:7
     container_name: paperless-redis
     restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
     volumes:
       - /srv/paperless/redis:/data
 
@@ -13,6 +15,7 @@ services:
     container_name: paperless-postgres
     restart: unless-stopped
     environment:
+      TZ: America/Los_Angeles
       POSTGRES_DB: paperless
       POSTGRES_USER: paperless
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
@@ -31,6 +34,7 @@ services:
     ports:
       - "8010:8000"
     environment:
+      TZ: America/Los_Angeles
       PAPERLESS_DBHOST: db
       PAPERLESS_DBNAME: paperless
       PAPERLESS_DBUSER: paperless

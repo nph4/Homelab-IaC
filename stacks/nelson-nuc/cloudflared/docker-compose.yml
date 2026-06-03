@@ -12,6 +12,7 @@ services:
       - proxy
 
     environment:
+      TZ: America/Los_Angeles
       TUNNEL_TOKEN: "${TUNNEL_TOKEN}"
 
 networks:

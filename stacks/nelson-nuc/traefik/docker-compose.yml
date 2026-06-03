@@ -17,6 +17,7 @@ services:
       - "443:443"
 
     environment:
+      TZ: America/Los_Angeles
       CF_DNS_API_TOKEN_FILE: /run/secrets/cf_api_token
       TRAEFIK_DASHBOARD_CREDENTIALS: "${TRAEFIK_DASHBOARD_CREDENTIALS}"
 

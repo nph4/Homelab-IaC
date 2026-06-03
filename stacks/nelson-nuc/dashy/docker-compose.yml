@@ -10,6 +10,7 @@ services:
       - /home/nelson/containers/dashy/my-config.yml:/app/user-data/conf.yml:ro
 
     environment:
+      TZ: America/Los_Angeles
       NODE_ENV: production
 
     networks:

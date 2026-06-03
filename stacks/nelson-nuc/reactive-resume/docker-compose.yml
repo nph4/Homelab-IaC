@@ -10,6 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
+      TZ: America/Los_Angeles
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -30,6 +31,7 @@ services:
     volumes:
       - minio_data:/data
     environment:
+      TZ: America/Los_Angeles
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     labels:
@@ -50,6 +52,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      TZ: America/Los_Angeles
       TIMEOUT: 10000
       CONCURRENT: 10
       TOKEN: ${CHROME_TOKEN}
@@ -68,6 +71,7 @@ services:
       - internal
       - proxy
     environment:
+      TZ: America/Los_Angeles
       PORT: 3000
       NODE_ENV: production
 

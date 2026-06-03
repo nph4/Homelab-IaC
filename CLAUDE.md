@@ -34,6 +34,8 @@ Always use absolute paths for both — relative paths break when Portainer deplo
 
 **Volumes:** Named Docker volumes for stateful data; bind mounts under `/home/nelson/containers/<stack>/` on nelson-nuc, and `/srv/<stack>/` on quark-vm.
 
+**Timezone:** All containers must include `TZ=America/Los_Angeles` in their `environment` block.
+
 ## Adding a new service
 
 1. Create `stacks/<host>/<service-name>/docker-compose.yml`
@@ -43,6 +45,7 @@ Always use absolute paths for both — relative paths break when Portainer deplo
 5. If the service needs env vars beyond what labels cover, create a `.env-example` and place the real `.env` at `/home/nelson/containers/<service>/.env` on nelson-nuc
 6. For non-Docker upstreams (host IPs, Tailscale IPs), add a router + service entry to `stacks/nelson-nuc/traefik/config.yml`
 7. Use absolute paths for all volume mounts, env_file references, and secret files
+8. Set `TZ=America/Los_Angeles` in the `environment` block
 
 ## IaC Migration Status
 

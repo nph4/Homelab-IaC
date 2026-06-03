@@ -10,6 +10,9 @@ services:
     networks:
       - proxy
 
+    environment:
+      TZ: America/Los_Angeles
+
     volumes:
       - /home/nelson/containers/home_assist:/config
       - /etc/localtime:/etc/localtime:ro
