@@ -59,6 +59,6 @@ Always use absolute paths for both — relative paths break when Portainer deplo
 
 **Blocked on:** Portainer processes compose files from inside its own container, so absolute host paths in `env_file:` are not visible to it. Fix is to add `/home/nelson/containers:/home/nelson/containers:ro` as a volume mount to the Portainer deployment. Once that is done, retest the mealie GitOps deploy, then roll the pattern out to remaining stacks (cloudflared, traefik, reactive-resume).
 
-**Phase 3 — not started:** Connect each stack to Portainer GitOps (repo URL `https://github.com/nph4/Homelab-IaC`, branch `main`, PAT auth already configured in Portainer). Suggested order: it-tools → vert → homebox → dashy → uptime-kuma → dozzle → wallos → mealie → calibre-web → reactive-resume → jellyfin → cloudflared → unifi → home-assistant → nextcloud → traefik.
+**Phase 3 — not started:** Connect each stack to Portainer GitOps (repo URL `https://github.com/nph4/Homelab-IaC`, branch `main`, PAT auth already configured in Portainer). Suggested order: it-tools → vert → homebox → dashy → uptime-kuma → dozzle → wallos → mealie → calibre-web → reactive-resume → jellyfin → cloudflared → unifi → home-assistant → nextcloud → traefik → days-since-incident.
 
 **Phase 4 — not started:** Set up GitHub webhooks pointing at Portainer per-stack webhook URLs for automatic redeployment on push.
