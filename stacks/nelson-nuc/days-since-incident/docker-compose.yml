@@ -5,6 +5,9 @@ services:
     container_name: days-since-incident
     restart: unless-stopped
 
+    environment:
+      - TZ=America/Los_Angeles
+
     volumes:
       - data:/data
 
