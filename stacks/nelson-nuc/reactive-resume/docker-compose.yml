@@ -75,16 +75,15 @@ services:
       PORT: 3000
       NODE_ENV: production
 
-      PUBLIC_URL: https://resume.local.nelsonhickman.com
+      APP_URL: https://resume.local.nelsonhickman.com
       STORAGE_URL: https://resume-storage.local.nelsonhickman.com/default
 
       CHROME_TOKEN: ${CHROME_TOKEN}
-      CHROME_URL: ws://chrome:3000
+      PRINTER_ENDPOINT: ws://chrome:3000
 
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
 
-      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET}
 
       MAIL_FROM: ${MAIL_FROM}
       # SMTP_URL: ${SMTP_URL}
