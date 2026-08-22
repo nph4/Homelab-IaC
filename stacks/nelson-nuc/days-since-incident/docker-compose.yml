@@ -27,8 +27,13 @@ services:
       - "traefik.http.services.days-since-incident.loadbalancer.server.port=5000"
 
 volumes:
+  # Pinned to the pre-existing volume (created under the old Portainer
+  # project name "days-since-incident") so GitOps redeploy reuses the
+  # real last_reset.txt instead of creating an empty volume under
+  # whatever the new project name happens to be.
   data:
-    driver: local
+    name: days-since-incident_data
+    external: true
 
 networks:
   proxy:
