@@ -22,7 +22,12 @@ services:
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
 
 volumes:
+  # Pinned to the pre-existing volume (created under the old Portainer
+  # project name "uptime_kuma") so GitOps redeploy reuses monitor
+  # history instead of creating an empty volume under a new project name.
   uptime-kuma:
+    name: uptime_kuma_uptime-kuma
+    external: true
 
 networks:
   proxy:
