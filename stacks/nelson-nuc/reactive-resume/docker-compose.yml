@@ -9,11 +9,12 @@ services:
       - internal
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - /home/nelson/containers/reactive-resume/.env
     environment:
       TZ: America/Los_Angeles
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
@@ -30,10 +31,10 @@ services:
       - proxy
     volumes:
       - minio_data:/data
+    env_file:
+      - /home/nelson/containers/reactive-resume/.env
     environment:
       TZ: America/Los_Angeles
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -69,6 +70,8 @@ services:
     networks:
       - internal
       - proxy
+    env_file:
+      - /home/nelson/containers/reactive-resume/.env
     environment:
       TZ: America/Los_Angeles
       PORT: 3000
@@ -79,25 +82,14 @@ services:
 
       PRINTER_ENDPOINT: ws://chrome:3000
 
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
-
-      AUTH_SECRET: ${AUTH_SECRET}
-
-      MAIL_FROM: ${MAIL_FROM}
-      # SMTP_URL: ${SMTP_URL}
-
       STORAGE_ENDPOINT: minio
       STORAGE_PORT: 9000
       STORAGE_REGION: us-east-1
       STORAGE_BUCKET: default
-      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
-      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       STORAGE_USE_SSL: "false"
       STORAGE_SKIP_BUCKET_CHECK: "false"
 
-      # Optional:
-      # DISABLE_SIGNUPS: ${DISABLE_SIGNUPS}
-      # DISABLE_EMAIL_AUTH: ${DISABLE_EMAIL_AUTH}
+      # Optional — set DISABLE_SIGNUPS / DISABLE_EMAIL_AUTH in the .env file to enable.
 
     labels:
       - "traefik.enable=true"

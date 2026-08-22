@@ -28,6 +28,14 @@ Reactive Resume v5.0.11 renamed several required environment variables. The cont
 
 ---
 
+## Issue 3: `${VAR}` substitution blocked Repository-mode GitOps (RESOLVED)
+
+`docker-compose.yml` used Compose `${VAR}` substitution for `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`, `AUTH_SECRET`, `MAIL_FROM`, and values composed from them (`DATABASE_URL` embedding the Postgres password; `STORAGE_ACCESS_KEY`/`STORAGE_SECRET_KEY` reusing the MinIO credentials under different names). That requires a `stack.env` committed to the repo for Repository-mode GitOps — not viable in a public repo (same issue as traefik's dashboard credentials).
+
+**Fix applied:** Consolidated onto a single shared `env_file: /home/nelson/containers/reactive-resume/.env`, same pattern as adventurelog. Since `env_file` can't do string interpolation, the composed values are written out literally in the `.env` (the Postgres password appears both standalone and inside `DATABASE_URL`; the MinIO credentials appear both standalone and duplicated as `STORAGE_ACCESS_KEY`/`STORAGE_SECRET_KEY`). `docker-compose.yml`'s `environment:` blocks now hold only static, non-secret config.
+
+**Host state confirmed while fixing this:** the currently running stack (deployed from `/home/nelson/stacks/reactive-resume/`, not yet GitOps) had a stale on-disk `.env` still using the old `CHROME_TOKEN`/`ACCESS_TOKEN_SECRET`/`REFRESH_TOKEN_SECRET` names from before Issues 1–2 were fixed — `AUTH_SECRET` and `MAIL_FROM` were actually coming from Portainer's env var UI override, not that file. Pulled the real live values via `docker inspect` on the running containers rather than trusting the stale file, and wrote the new `/home/nelson/containers/reactive-resume/.env` from those.
+
 ## Future
 
-Connect this stack to Portainer GitOps (it's already in the Phase 3 list in CLAUDE.md) so future compose changes come from the git repo automatically.
+Redeploy via Portainer's local editor with the updated compose + new `.env` path, confirm the app still works end-to-end (login, resume editor, PDF export via chrome/browserless, storage via minio), then connect this stack to Portainer GitOps (it's already in the Phase 3 list in CLAUDE.md) so future compose changes come from the git repo automatically.
