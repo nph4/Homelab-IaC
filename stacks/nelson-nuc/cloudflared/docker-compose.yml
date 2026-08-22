@@ -3,7 +3,7 @@ version: "3.8"
 services:
   cloudflared:
     image: cloudflare/cloudflared:2026.2.0
-    container_name: cloudflared
+    container_name: cloudflared-git
     restart: unless-stopped
 
     command: tunnel --no-autoupdate run
