@@ -4,8 +4,8 @@
 .env.*
 
 # Secrets
-secrets/
-**/secrets/
+secrets/*
+**/secrets/*
 !**/secrets/*-example
 
 # Runtime data

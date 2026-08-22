@@ -161,3 +161,7 @@ http:
         middlewares:
           - default-whitelist
           - default-headers
+
+    traefik-auth:
+      basicAuth:
+        usersFile: /run/secrets/traefik_dashboard_htpasswd

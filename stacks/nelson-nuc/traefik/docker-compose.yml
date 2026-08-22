@@ -19,10 +19,10 @@ services:
     environment:
       TZ: America/Los_Angeles
       CF_DNS_API_TOKEN_FILE: /run/secrets/cf_api_token
-      TRAEFIK_DASHBOARD_CREDENTIALS: "${TRAEFIK_DASHBOARD_CREDENTIALS}"
 
     secrets:
       - cf_api_token
+      - traefik_dashboard_htpasswd
 
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -35,14 +35,13 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=http"
       - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.local.nelsonhickman.com`)"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
       - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
 
       - "traefik.http.routers.traefik-secure.entrypoints=https"
       - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.local.nelsonhickman.com`)"
-      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth@file"
       - "traefik.http.routers.traefik-secure.tls=true"
       - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
       - "traefik.http.routers.traefik-secure.service=api@internal"
@@ -62,6 +61,8 @@ services:
 secrets:
   cf_api_token:
     file: /home/nelson/containers/traefik/cf_api_token.txt
+  traefik_dashboard_htpasswd:
+    file: /home/nelson/containers/traefik/dashboard_htpasswd.txt
 
 networks:
   proxy:
