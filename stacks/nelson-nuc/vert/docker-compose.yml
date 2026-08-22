@@ -6,6 +6,9 @@ services:
     container_name: vert
     restart: unless-stopped
 
+    environment:
+      TZ: America/Los_Angeles
+
     networks:
       - proxy
 
