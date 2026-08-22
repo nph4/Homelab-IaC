@@ -3,7 +3,7 @@ version: "3.8"
 services:
   homeassistant:
     container_name: homeassistant
-    image: ghcr.io/home-assistant/home-assistant:2026.5.2
+    image: ghcr.io/home-assistant/home-assistant:2024.5.1
     restart: unless-stopped
     privileged: true
 
@@ -17,7 +17,7 @@ services:
       - /home/nelson/containers/home_assist:/config
       - /etc/localtime:/etc/localtime:ro
 
-    # Stable Z-Wave USB device access
+    # Stable USB device access (Zigbee dongle)
     devices:
       - /dev/serial/by-id:/dev/serial/by-id
 
