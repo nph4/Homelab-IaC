@@ -11,9 +11,11 @@ services:
     networks:
       - proxy
 
+    env_file:
+      - /home/nelson/containers/cloudflared/.env
+
     environment:
       TZ: America/Los_Angeles
-      TUNNEL_TOKEN: "${TUNNEL_TOKEN}"
 
 networks:
   proxy:
