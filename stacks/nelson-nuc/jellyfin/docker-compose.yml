@@ -21,6 +21,12 @@ services:
       PGID: "1000"
       TZ: "America/Los_Angeles"
 
+    devices:
+      - /dev/dri:/dev/dri
+
+    group_add:
+      - "109" # render group on nelson-nuc host, needed for /dev/dri access
+
     volumes:
       - /home/nelson/containers/Jellyfin/config:/config
       - /mnt/nas/media/video/Movies:/data/Movies
