@@ -2,12 +2,10 @@ version: "3.8"
 
 services:
   dashy:
-    image: lissy93/dashy:3.1.9
+    image: dashy:3.1.9
+    build: .
     container_name: dashy
     restart: unless-stopped
-
-    volumes:
-      - /home/nelson/containers/dashy/my-config.yml:/app/user-data/conf.yml:ro
 
     environment:
       TZ: America/Los_Angeles
