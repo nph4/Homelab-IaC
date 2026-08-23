@@ -38,8 +38,12 @@ services:
       - "traefik.http.services.mealie.loadbalancer.server.port=9000"
 
 volumes:
+  # Pinned to the pre-existing volume (created under the old Portainer
+  # project name "mealie2") so GitOps redeploy reuses the real recipe
+  # library instead of the empty volume created under project "mealie".
   mealie-data:
-    driver: local
+    name: mealie2_mealie-data
+    external: true
 
 networks:
   proxy:
