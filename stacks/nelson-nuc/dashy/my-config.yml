@@ -144,6 +144,13 @@ sections:
     target: newtab
     statusCheck: true
     id: 18_600_dayssinceinc
+  - title: AdventureLog
+    description: Self-hosted travel and adventure logging
+    icon: hl-adventure-log
+    url: https://adventurelog.local.nelsonhickman.com
+    target: newtab
+    statusCheck: true
+    id: 19_600_adventurelog
 - name: Physical Devices
   icon: mdi-NetworkOutline
   displayData:
