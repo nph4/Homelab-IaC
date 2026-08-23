@@ -147,7 +147,7 @@ sections:
   - title: AdventureLog
     description: Self-hosted travel and adventure logging
     icon: hl-adventure-log
-    url: https://adventurelog.local.nelsonhickman.com
+    url: https://adventurelog.nelsonhickman.com
     target: newtab
     statusCheck: true
     id: 19_600_adventurelog
