@@ -7,7 +7,7 @@ Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose st
 ```
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
-  quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent
+  quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent, portainer-agent
 ```
 
 Each subdirectory under `stacks/<host>/` is one Portainer stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references.
@@ -17,6 +17,7 @@ Each subdirectory under `stacks/<host>/` is one Portainer stack: a `docker-compo
 A couple of things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
 - **Portainer** — must already exist before it can manage anything.
 - **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`).
+- **The Portainer Agent on quark-vm** ([`stacks/quark-vm/portainer-agent`](stacks/quark-vm/portainer-agent)) — the pipe Portainer uses to reach that host. Its compose file is committed for version tracking, but it's applied on the host by hand rather than via GitOps, since redeploying it restarts the agent Portainer is mid-deploy through.
 
 ## Architecture
 
@@ -62,6 +63,7 @@ A couple of things are always bootstrapped by hand, not by GitOps, since they're
 | `paperless` | Document management ([paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)) |
 | `crashplan` | CrashPlan backup client |
 | `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
+| `portainer-agent` | Portainer connectivity agent for this host (version tracks the Portainer server's LTS) |
 
 ## Adding a service
 

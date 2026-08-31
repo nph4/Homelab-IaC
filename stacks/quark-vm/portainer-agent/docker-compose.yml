@@ -1,0 +1,36 @@
+version: "3.8"
+
+# Portainer Agent for the quark-vm environment.
+#
+# This is the connectivity agent nelson-nuc's Portainer server talks to in
+# order to manage Docker on quark-vm (shown as the "quarks" environment,
+# tcp://100.76.105.3:9001). Its version should track the Portainer server's
+# LTS version (server is on 2.45.0 LTS).
+#
+# Historically bootstrapped by hand (plain `docker run`), same category as
+# Portainer itself and the `proxy` network in README's "What runs manually".
+# Committed here so the version and run config are tracked in Git. If this
+# stack is ever connected to Portainer GitOps, note the self-surgery caveat:
+# redeploying it restarts the very agent Portainer uses to reach this host,
+# so a broken compose file here can cut off management of the whole
+# environment until fixed on the host directly.
+#
+# No Traefik labels: quark-vm services route via static entries in
+# stacks/nelson-nuc/traefik/config.yml, not Docker labels.
+
+services:
+  portainer-agent:
+    image: portainer/agent:2.45.0
+    container_name: portainer_agent
+    restart: always
+
+    environment:
+      TZ: America/Los_Angeles
+
+    ports:
+      - "9001:9001"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+      - /:/host
