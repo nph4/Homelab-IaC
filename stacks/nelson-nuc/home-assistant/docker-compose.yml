@@ -3,7 +3,7 @@ version: "3.8"
 services:
   homeassistant:
     container_name: homeassistant
-    image: ghcr.io/home-assistant/home-assistant:2025.6.3
+    image: ghcr.io/home-assistant/home-assistant:2025.12.5
     restart: unless-stopped
     privileged: true
 
