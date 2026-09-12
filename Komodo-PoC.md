@@ -1,6 +1,6 @@
 # Komodo Proof-of-Concept Plan
 
-Status: **not started** — planning only, sketched 2026-09-11. See the README's "Migrating off Portainer" section for why this is happening.
+Status: **in progress** — Core + Mongo + one Periphery agent stood up on nelson-nuc 2026-09-12. See the README's "Migrating off Portainer" section for why this is happening. See "Progress Log" below for what's actually been done against the Steps below.
 
 ## Goal
 
@@ -41,6 +41,20 @@ Target stack for the POC: `it-tools` ([`stacks/nelson-nuc/it-tools/docker-compos
 ## Rollback / cleanup
 
 Trivial by design, since everything here is new and parallel to production: stop/remove the POC container and its Komodo Stack resource, remove both Periphery agents and Komodo Core, delete the POC Traefik hostname. The live `it-tools` and its Portainer entry are never at risk.
+
+## Progress Log
+
+**2026-09-12 — Core, Mongo, and the nelson-nuc Periphery agent stood up (steps 1–3 of "Steps" above).** Deployed as a single compose project at `/home/nelson/containers/komodo/` on nelson-nuc (`compose.yml` + `compose.env`, `.env` symlinked to `compose.env` per Komodo's own template layout) — kept entirely outside this repo and outside Portainer, per the plan's non-goals. Not committed anywhere; this file is the only record of what's running.
+
+Deviations from Komodo's stock template, made before first boot:
+- `mongo` image pinned to `mongo:8.0` (template shipped unpinned `mongo:latest`) — matches this repo's own Phase 1 image-pinning convention even though the Komodo stack itself lives outside the repo.
+- Core's port publish changed from `9120:9120` (all interfaces) to `100.69.15.50:9120:9120` — bound to nelson-nuc's Tailscale IP only, not LAN-wide. Confirmed reachable over Tailscale from nelson-desktop (`curl http://100.69.15.50:9120/` → `200`), which is a better answer than the plan's "LAN-only for now" assumption in Architecture above — it means quark-vm's Periphery agent (step 4, not yet done) can likely reach Core over Tailscale directly rather than needing real LAN routing between the two hosts.
+- `KOMODO_DATABASE_PASSWORD`, `KOMODO_WEBHOOK_SECRET`, `KOMODO_JWT_SECRET`, `KOMODO_INIT_ADMIN_PASSWORD` all regenerated from the template's placeholder values before boot.
+- `KOMODO_DISABLE_USER_REGISTRATION` flipped `false` → `true` — closes public signup from the start, the same lesson learned the hard way on `adventurelog`'s insecure defaults (see `CLAUDE.md`).
+
+Verified after boot (`docker compose ps`, `docker compose logs`): all three containers (`komodo-core-1`, `komodo-mongo-1`, `komodo-periphery-1`) up and stable (~2h uptime at check time, no restarts). Core created the init `admin` user and its initial system resources on first boot, serving on `:9120` (SSL disabled — fine for a Tailscale-only-bound POC). Periphery connected to Core over their internal `ws://core:9120` link and logged in as Server **`Local`** (Komodo's `first_server_name` mechanism — no manual server-registration step was needed for the same-host agent). One benign `Connection refused` retry logged at Periphery startup, from Core not yet accepting connections in the first ~10s of the shared compose `up` — self-resolved, not investigated further.
+
+**Not yet done:** no quark-vm Periphery agent (step 4), no Stack resource pointing at this repo's `it-tools` (step 5), no test commit/redeploy cycle (step 7), no GUI evaluation (step 9). This log entry covers infrastructure standup only — the actual GitOps-loop proof (the point of the POC) hasn't started yet.
 
 ## Follow-up (separate from this POC)
 
