@@ -119,3 +119,9 @@ Alternatives evaluated against the hard requirements (multi-host, GitOps/IaC, FL
 Decided **not** to pursue exposing a Komodo webhook through the existing `cloudflared` tunnel as part of the initial POC — same LAN-only-hostname reachability problem already solved for Portainer via polling instead (Phase 4 above) will recur identically for Komodo's webhook receiver, so the POC plan defaults to polling and treats webhook-via-tunnel as an explicit stretch goal, not a blocker.
 
 Full POC plan: [`Komodo-PoC.md`](Komodo-PoC.md). Summary tracked in [`README.md`](README.md)'s "Migrating off Portainer" section.
+
+## Komodo POC: Core/Mongo/Periphery standup (2026-09-12)
+
+POC moved from planning to actual infrastructure: Core + Mongo + one Periphery agent deployed on nelson-nuc at `/home/nelson/containers/komodo/` (own compose project, deliberately outside both this repo and Portainer). Detailed record — deviations from Komodo's stock template, what was verified, what's still open — lives in [`Komodo-PoC.md`](Komodo-PoC.md)'s "Progress Log" section, not duplicated here.
+
+One finding worth surfacing at this level since it affects the rest of the POC's plan: Core's port is bound to nelson-nuc's Tailscale IP (`100.69.15.50:9120`) and was confirmed reachable over Tailscale from a third machine (nelson-desktop), not just LAN. That means the still-outstanding quark-vm Periphery agent (POC step 4) should be able to reach Core over Tailscale directly, the same way SSH access to quark-vm was already established for the Portainer-agent-upgrade work above — worth trying that path first before assuming any LAN routing needs to be set up between the two hosts.
