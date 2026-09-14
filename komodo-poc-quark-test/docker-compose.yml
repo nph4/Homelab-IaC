@@ -1,0 +1,12 @@
+# Komodo migration POC only — see Komodo-PoC.md (step 8: prove the quark-vm
+# Periphery agent works from the same Core). Deliberately outside stacks/ since
+# this is not a real managed service, just a throwaway deploy target with no
+# Traefik/network dependency. Safe to delete once the POC concludes.
+
+services:
+  komodo-poc-quark-test:
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    container_name: komodo-poc-quark-test
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
