@@ -2,6 +2,7 @@
 # docker-compose.yml under a different container name / Traefik hostname so it
 # runs alongside the real Portainer-managed it-tools without colliding.
 # Not used by Portainer; not a second production instance.
+# POC step 7 marker: trivial label-comment change to prove push -> redeploy.
 
 services:
   it-tools:
