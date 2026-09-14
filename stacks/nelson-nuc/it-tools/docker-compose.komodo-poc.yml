@@ -1,0 +1,30 @@
+# Komodo migration POC only — see Komodo-PoC.md. Deploys the same image as
+# docker-compose.yml under a different container name / Traefik hostname so it
+# runs alongside the real Portainer-managed it-tools without colliding.
+# Not used by Portainer; not a second production instance.
+
+services:
+  it-tools:
+    image: corentinth/it-tools:2024.10.22-7ca5933
+    container_name: it-tools-komodo-poc
+    restart: unless-stopped
+
+    environment:
+      TZ: America/Los_Angeles
+
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.it-tools-komodo-poc.rule=Host(`it-tools-poc.local.nelsonhickman.com`)"
+      - "traefik.http.routers.it-tools-komodo-poc.entrypoints=https"
+      - "traefik.http.routers.it-tools-komodo-poc.tls=true"
+      - "traefik.http.routers.it-tools-komodo-poc.tls.certresolver=cloudflare"
+
+      - "traefik.http.services.it-tools-komodo-poc.loadbalancer.server.port=80"
+
+networks:
+  proxy:
+    external: true
