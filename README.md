@@ -2,21 +2,21 @@
 
 Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed by [Portainer](https://www.portainer.io/) in GitOps mode — Portainer pulls each stack directly from this repo and polls it every few minutes to redeploy on new commits, rather than being edited by hand through Portainer's web UI. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
 
-## ⚠️ Migrating off Portainer (PoC complete, migration decision not yet made)
+## ⚠️ Migrating off Portainer (PoC fully complete and closed out; migration decision not yet made)
 
 Portainer 3.0 drops the standalone Community Edition build. 2.x keeps getting security patches, but no new features; the only forward path (3.x) gates multi-host and GitOps behind a capped "3 Nodes Free" tier of the Business Edition, not a FLOSS release. Since a free/libre offering is a hard requirement here, this repo needs to move off Portainer before 2.x support ends.
 
-Leading candidate: **[Komodo](https://github.com/moghtech/komodo)** (GPL-3.0) — closest architectural match to this repo's model of git-tracked compose stacks deployed across multiple hosts, with no paywalled GitOps or multi-host features. Alternatives considered: [Coolify](https://github.com/coollabsio/coolify) (Apache-2.0, more PaaS-flavored, heavier lift) and CapRover (Apache-2.0, also PaaS-flavored).
+Leading candidate: **[Komodo](https://github.com/moghtech/komodo)** (GPL-3.0) — closest architectural match to this repo's model of git-tracked compose stacks deployed across multiple hosts, with no paywalled GitOps or multi-host features, and (confirmed 2026-09-19) no paid tier of any kind. Alternatives considered: [Coolify](https://github.com/coollabsio/coolify) (Apache-2.0, more PaaS-flavored, heavier lift) and CapRover (Apache-2.0, also PaaS-flavored).
 
 **PoC (2026-09-12 to 2026-09-14): all 9 planned steps passed.** Core + Mongo stood up on nelson-nuc, Periphery agents connected on both nelson-nuc and quark-vm from that one Core, a throwaway duplicate `it-tools` stack deployed and redeployed via a real git push (verified by the deployed commit hash advancing, not just "the page loads"), and a second throwaway stack proven on quark-vm — all without touching any real Portainer-managed stack. Full detail in [`Komodo-PoC.md`](Komodo-PoC.md); research notes in [`CLAUDE.md`](CLAUDE.md).
 
-Two things to weigh before committing to a real migration:
-- **Auto-redeploy cadence is coarser than Portainer's out of the box.** Komodo's default is a single daily scheduled job (3am), not Portainer's continuous 5-minute poll — proven working here by invoking that job's action directly rather than waiting for it to fire. A real migration needs either a shorter schedule or a defined manual/webhook-triggered pattern between runs.
-- **The GUI comparison still needs a real walkthrough.** The PoC validated the underlying API (logs, redeploy, drift-detection via deployed-vs-latest commit hash) but no browser session was available to actually click through Komodo's UI side by side with Portainer's — don't treat that comparison as settled yet.
+One thing to weigh before committing to a real migration: **auto-redeploy cadence is coarser than Portainer's out of the box.** Komodo's default is a single daily scheduled job (3am), not Portainer's continuous 5-minute poll — proven working here by invoking that job's action directly rather than waiting for it to fire. A real migration needs either a shorter schedule or a defined manual/webhook-triggered pattern between runs.
 
 **Stateful follow-up PoC (2026-09-19): both hard patterns validated.** The uptime-kuma/mealie external-volume-pinning trick works identically under Komodo, no changes needed. Absolute-path `env_file`/Docker `secrets:` hit a real blocker — Komodo's Periphery agent runs `docker compose` as a subprocess inside its own container and (unlike Portainer) couldn't see any host path outside its mounted root — fixed once by adding a read-only `/home/nelson/containers` mount to Periphery, mirroring the fix Portainer itself needed in Phase 2. Detail in `Komodo-PoC.md`'s "Follow-up" section.
 
-Still not yet validated: whether any Portainer feature in daily use here turns out to be Komodo Business-tier-gated.
+**GUI walkthrough (2026-09-19): confirmed usable.** A real hands-on comparison found every Portainer GUI operation used day to day (logs, redeploy, deployed-commit visibility, drift) has a Komodo equivalent — names and layout differ, expected friction from switching stacks, not a functional gap.
+
+**All three PoC success criteria are now met, and the three throwaway PoC stacks have been torn down** (only the reusable Core/Mongo/Periphery infrastructure remains) — see `Komodo-PoC.md`'s "Success criteria" and "Rollback / cleanup" sections. The PoC has answered the question it set out to answer; whether/when to migrate real stacks off Portainer is a separate, still-open decision.
 
 ## Layout
 

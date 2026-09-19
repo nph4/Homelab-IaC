@@ -1,6 +1,6 @@
 # Komodo Proof-of-Concept Plan
 
-Status: **all 9 steps complete (2026-09-13/14)** — both hosts connected, redeploy-on-push proven on nelson-nuc, second host proven on quark-vm, GUI evaluated (API-level). **Stateful follow-up POC also complete (2026-09-19)** — see "Follow-up" section: named-volume pinning works unmodified, `env_file` secrets needed one Periphery mount fix (now applied). See the README's "Migrating off Portainer" section for why this is happening. See "Progress Log" below for what's actually been done against the Steps below.
+Status: **PoC fully complete and closed out (2026-09-19).** All 9 original steps done (2026-09-13/14), the stateful follow-up done (named-volume pinning works unmodified, `env_file` needed one Periphery mount fix, now applied), and all three success criteria met — including a real user UI walkthrough confirming Komodo covers every Portainer GUI operation in daily use, and confirmation Komodo has no paid tier at all. All three throwaway POC stacks have been torn down; only the reusable Core/Mongo/Periphery infrastructure remains. See the README's "Migrating off Portainer" section for why this is happening; a real migration decision has not yet been made. See "Progress Log" and "Rollback / cleanup" below for the full record.
 
 ## Goal
 
@@ -36,11 +36,19 @@ Target stack for the POC: `it-tools` ([`stacks/nelson-nuc/it-tools/docker-compos
 
 - [x] Both hosts manageable from a single Komodo Core. — confirmed via `ListServers` (`Local` + `quark-vm`, both `Ok`).
 - [x] A git push results in an automatic redeploy, verified via `docker inspect`'s commit hash — not just "the page loads." — confirmed via `GetStack`'s `deployed_hash` tracking the pushed commit (see Progress Log, step 7). Caveat: proven via the same execute path the daily schedule uses, not by waiting for that schedule to fire unattended.
-- [ ] No feature Portainer currently provides for free turns out to require a paid Komodo tier. — not yet assessed; needs a real feature-by-feature comparison, not just this POC's narrow slice.
+- [x] No feature Portainer currently provides for free turns out to require a paid Komodo tier. — **resolved 2026-09-19: moot.** User did a real UI walkthrough (not just the API-level check from step 9) and confirmed every Portainer GUI operation they actually use day to day (viewing logs, triggering a redeploy, seeing the deployed commit, spotting drift) has a Komodo equivalent — names and locations differ, expected friction from switching stacks, not a missing-feature gap. Also confirmed directly: **Komodo has no paid/business tier at all** (unlike Portainer, which is what triggered this migration in the first place) — nothing to be gated behind.
+
+All three success criteria are now met. Combined with the stateful follow-up POC above (both hard patterns validated), **the PoC has fully answered the question it set out to answer: Komodo can do this repo's GitOps job.** Whether/when to actually migrate real stacks off Portainer is a separate decision, not yet made.
 
 ## Rollback / cleanup
 
-Trivial by design, since everything here is new and parallel to production: stop/remove the POC container and its Komodo Stack resource, remove both Periphery agents and Komodo Core, delete the POC Traefik hostname. The live `it-tools` and its Portainer entry are never at risk.
+**Performed 2026-09-19 — all three POC stacks torn down, environment back to only Core/Mongo/Periphery infrastructure:**
+- All three Komodo Stack resources (`it-tools-komodo-poc`, `komodo-poc-quark-test`, `komodo-stateful-poc`) destroyed (containers + networks removed) then deleted as resources, via `DestroyStack` + `DeleteStack`. Confirmed via `docker ps -a` on both hosts and `ListStacks` (0 remaining).
+- Host-side test artifacts removed: the `komodo-stateful-poc-legacy_data` volume and its marker file, and `/home/nelson/containers/komodo-poc-stateful-test/.env` (the throwaway secret file) on nelson-nuc.
+- Leftover Periphery Git-clone directories removed on both hosts (`/etc/komodo/stacks/{it-tools-komodo-poc,komodo-stateful-poc}` on nelson-nuc, `.../komodo-periphery/root/stacks/komodo-poc-quark-test` on quark-vm) — root-owned by the Periphery process itself, so removed via `docker exec` into each host's `periphery` container rather than a direct host `rm` (same no-passwordless-sudo workaround pattern used elsewhere in this repo's history, e.g. the HACS storage-file fix).
+- The three throwaway compose files removed from this repo: `stacks/nelson-nuc/it-tools/docker-compose.komodo-poc.yml`, `komodo-poc-quark-test/`, `komodo-poc-stateful-test/`.
+
+**Deliberately kept, not part of the rollback:** Komodo Core, Mongo, and both Periphery agents (nelson-nuc + quark-vm) — this is reusable infrastructure for whenever a real migration decision is made, not POC-only scaffolding. The read-only `/home/nelson/containers` mount added to nelson-nuc's Periphery (see "Follow-up" above) also stays — it's a prerequisite for any future stateful-stack work, not something specific to the deleted test stack. The live `it-tools` and its Portainer entry were never touched at any point in this POC.
 
 ## Progress Log
 
