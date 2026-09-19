@@ -23,8 +23,11 @@ services:
     container_name: ansible-terminal
     restart: unless-stopped
 
-    # ttyd is the entrypoint; these args become the command it serves in the browser
-    command: ["docker", "exec", "-it", "ansible", "bash"]
+    # The image's entrypoint is tini, and its default CMD is `ttyd -W bash` -
+    # ttyd itself is part of the command, not a fixed entrypoint, so it must
+    # be included explicitly here or this replaces ttyd entirely and runs
+    # the exec directly as PID 1 (fails immediately: "input device is not a TTY").
+    command: ["ttyd", "-W", "docker", "exec", "-it", "ansible", "bash"]
 
     environment:
       - TZ=America/Los_Angeles
