@@ -1,6 +1,14 @@
 # Komodo Migration Plan
 
-Status: **planning complete, session 1 not yet started (2026-09-19).** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 1 complete (2026-09-19), 6 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+
+## Warm-up: the `ansible` stack (2026-09-19, before session 1)
+
+Ahead of the real migration sessions, the user manually deployed `ansible` (never previously run under Portainer, so zero cutover risk) through Komodo's GUI directly, to learn the workflow hands-on. Hit two real, unrelated bugs along the way — both now fixed and pushed:
+- **File-extension typo:** Komodo's Stack config defaulted `file_paths` to `docker-compose.yaml`, but this repo's actual file is `docker-compose.yml` — "Validate Files" stage failed with a clear "Missing files" error. Fixed by editing the Stack's File Paths field in the GUI.
+- **Real compose bug in the repo, exposed by this stack's first-ever deployment:** `ansible-terminal` (a `tsl0922/ttyd` web-terminal container) crash-looped immediately (`RestartCount` climbing, "the input device is not a TTY" on every attempt). Root cause: the image's entrypoint is `tini`, with a default `CMD` of `ttyd -W bash` — `ttyd` itself is part of the command, not baked into the entrypoint. The compose file's `command:` replaced that default with just `docker exec -it ansible bash`, dropping `ttyd` from the exec chain entirely, so the container's real PID 1 became the raw `docker exec` invocation with no pty. Fixed in the repo (`command: ["ttyd", "-W", "docker", "exec", "-it", "ansible", "bash"]`, commit `6b11b73`) — confirmed `RestartCount: 0` after redeploy, correct ttyd startup log, working web terminal.
+
+Both fixes are useful evidence for the plan: Komodo's own failure reporting (stage-by-stage logs, clear error text) was sufficient to diagnose both issues without needing to fall back to raw `docker logs` digging for the first one.
 
 ## Why now, and the real deadline
 
@@ -49,7 +57,17 @@ Mechanics: joined `core` to the external `proxy` network and added the repo's st
 
 **Still needed, not yet done:** a Pi-hole Local DNS Record for `komodo.local.nelsonhickman.com → 192.168.88.101` (nelson-nuc's LAN IP, same address every other `*.local.nelsonhickman.com` entry uses) — Pi-hole isn't part of this repo and wasn't touched from this session; user is adding it directly via the Pi-hole admin UI.
 
+## Session 1 complete (2026-09-19): 6 stateless stacks cut over
+
+Cutover mechanics decided and proven, reusable for every remaining session:
+
+1. **Disable Portainer's polling first, per stack**, via `POST /api/stacks/{id}/git?endpointId=<id>` with the stack's existing `RepositoryReferenceName`/`ConfigFilePath`/`Env`/`SourceID` unchanged and `AutoUpdate: null`. Confirmed via source (`stack_update_git.go`) that this endpoint only updates the stored config and reconciles the polling scheduler — it does **not** pull or redeploy, so it's safe to call against a live stack. The stack's `AutoUpdate.JobID` clears to empty, which is the actual signal polling stopped (the `Interval` field stays populated but is cosmetic once `JobID` is gone). Needed a user-generated Portainer API token for this (Account settings → Access Tokens) since no token existed from earlier work.
+2. **Create the Komodo Stack with a name matching the existing Docker Compose project name** (confirmed via `docker inspect <container> --format '{{index .Config.Labels "com.docker.compose.project"}}'` before creating each Stack). When the project name matches exactly, Komodo's `docker compose up` recognizes the running container as already satisfying the desired state and **leaves it running untouched** — a true zero-downtime cutover, not a delete/recreate. Confirmed for `it-tools`, `dozzle`, `homebox` (`StartedAt` identical before/after, `RestartCount: 0`). The other 3 (`vert`, both `dozzle-agent` instances) did get a real recreate (minor config drift from what Portainer had last applied) — still clean, just not a no-op.
+3. **Same-named resources across hosts need Komodo's `project_name` override**, since Stack *resource* names must be unique per Core but the underlying Docker Compose project name does not need to change. Used this for quark-vm's `dozzle-agent` (Komodo resource named `dozzle-agent-quark-vm`, `project_name: "dozzle-agent"` set explicitly to match its existing container label) so it recreated in place exactly like its nelson-nuc counterpart.
+
+All 6 stacks (`it-tools`, `dozzle`, `dozzle-agent` ×2, `vert`, `homebox`) verified against the same bar as every stack in the original Portainer migration: `RestartCount: 0`, correct `TZ`, `deployed_hash` == `latest_hash` in Komodo, Traefik `200` on the three web-facing ones (`dozzle` restarted once deliberately to force a fresh boot log — confirmed `"clients":2`, both agents connected with no errors).
+
 ## Open items to resolve during the migration, not before it
 
-- Exact per-stack cutover mechanics (detach-then-deploy vs. stop-Portainer-then-deploy-Komodo) — likely decided by trying it once on the first `it-tools` real-traffic stack in session 1 and reusing whatever works cleanly.
 - Final Portainer decommission steps (removing the Portainer container/agent themselves, not just detaching stacks) — deferred to the very end, no need to plan in detail yet.
+- The stale `com.docker.compose.project.config_files` label left behind on a no-op cutover (still points at Portainer's old clone path until the next real recreate) — cosmetic only, same behavior already seen on the home-assistant stack-115 reconnect, not worth chasing.
