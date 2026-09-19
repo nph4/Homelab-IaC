@@ -14,7 +14,9 @@ Two things to weigh before committing to a real migration:
 - **Auto-redeploy cadence is coarser than Portainer's out of the box.** Komodo's default is a single daily scheduled job (3am), not Portainer's continuous 5-minute poll — proven working here by invoking that job's action directly rather than waiting for it to fire. A real migration needs either a shorter schedule or a defined manual/webhook-triggered pattern between runs.
 - **The GUI comparison still needs a real walkthrough.** The PoC validated the underlying API (logs, redeploy, drift-detection via deployed-vs-latest commit hash) but no browser session was available to actually click through Komodo's UI side by side with Portainer's — don't treat that comparison as settled yet.
 
-Not yet validated: the two hard patterns this repo actually depends on for stateful stacks — absolute-path `env_file`/Docker `secrets:`, and the uptime-kuma/mealie external-volume-pinning trick (see Architecture below and `CLAUDE.md`) — plus whether any Portainer feature in daily use here turns out to be Komodo Business-tier-gated. See `Komodo-PoC.md`'s "Follow-up" section.
+**Stateful follow-up PoC (2026-09-19): both hard patterns validated.** The uptime-kuma/mealie external-volume-pinning trick works identically under Komodo, no changes needed. Absolute-path `env_file`/Docker `secrets:` hit a real blocker — Komodo's Periphery agent runs `docker compose` as a subprocess inside its own container and (unlike Portainer) couldn't see any host path outside its mounted root — fixed once by adding a read-only `/home/nelson/containers` mount to Periphery, mirroring the fix Portainer itself needed in Phase 2. Detail in `Komodo-PoC.md`'s "Follow-up" section.
+
+Still not yet validated: whether any Portainer feature in daily use here turns out to be Komodo Business-tier-gated.
 
 ## Layout
 
