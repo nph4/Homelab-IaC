@@ -41,8 +41,15 @@ That's 20 of the 21 routine stacks explicitly grouped above (`komodo` itself and
 
 Same posture used throughout the original Portainer GitOps migration: nothing is deleted from Portainer until the Komodo-managed copy is confirmed healthy and serving real traffic. Named volumes are never recreated fresh — always attached via `external: true` to the exact volume Portainer's container was already using, so a bad Komodo deploy loses nothing since the underlying data was never touched by Komodo in the first place. If a stack misbehaves under Komodo, the fallback is simply re-enabling Portainer's GitOps stack for it (not deleted, just no longer the active manager) while the Komodo side is debugged — the two tools never need to run the same stack simultaneously for real traffic, unlike the POC's deliberately-parallel throwaway stacks.
 
+## Komodo Core given a real hostname (2026-09-19, ahead of session 1)
+
+Resolved the "harden Komodo Core" open item below before it became urgent: Core is now reachable at **`https://komodo.local.nelsonhickman.com`** through Traefik (TLS via the same `cloudflare` certresolver every other internal service uses), in addition to — not instead of — its existing Tailscale-IP-bound `100.69.15.50:9120` (kept unchanged, since both Periphery agents' `PERIPHERY_CORE_ADDRESS`/`core_addresses` point at that exact address and didn't need to move).
+
+Mechanics: joined `core` to the external `proxy` network and added the repo's standard Traefik docker-label pattern (same shape as `it-tools`/`homebox`) directly in `/home/nelson/containers/komodo/compose.yml` on nelson-nuc — host-side only, not repo-tracked, consistent with how the rest of the Komodo stack has been handled throughout. Recreated only the `core` service (`docker compose up -d core`); `RestartCount: 0` after. Both Periphery agents (nelson-nuc and quark-vm) logged one expected `Connection refused` / reconnect cycle at the moment `core` restarted, self-healed within 5 seconds — not a real disruption, same pattern already seen during the original Periphery-mount-fix recreate. Confirmed via `curl --resolve komodo.local.nelsonhickman.com:443:192.168.88.101 https://komodo.local.nelsonhickman.com/` → `200`.
+
+**Still needed, not yet done:** a Pi-hole Local DNS Record for `komodo.local.nelsonhickman.com → 192.168.88.101` (nelson-nuc's LAN IP, same address every other `*.local.nelsonhickman.com` entry uses) — Pi-hole isn't part of this repo and wasn't touched from this session; user is adding it directly via the Pi-hole admin UI.
+
 ## Open items to resolve during the migration, not before it
 
 - Exact per-stack cutover mechanics (detach-then-deploy vs. stop-Portainer-then-deploy-Komodo) — likely decided by trying it once on the first `it-tools` real-traffic stack in session 1 and reusing whatever works cleanly.
-- Whether to harden Komodo Core itself (TLS, Traefik-routed hostname instead of Tailscale-IP-only) before real production traffic depends on it — currently fine for a PoC, worth revisiting once it's managing 20+ real services.
 - Final Portainer decommission steps (removing the Portainer container/agent themselves, not just detaching stacks) — deferred to the very end, no need to plan in detail yet.
