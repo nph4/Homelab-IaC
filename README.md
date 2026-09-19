@@ -16,7 +16,9 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **GUI walkthrough (2026-09-19): confirmed usable.** A real hands-on comparison found every Portainer GUI operation used day to day (logs, redeploy, deployed-commit visibility, drift) has a Komodo equivalent — names and layout differ, expected friction from switching stacks, not a functional gap.
 
-**All three PoC success criteria are now met, and the three throwaway PoC stacks have been torn down** (only the reusable Core/Mongo/Periphery infrastructure remains) — see `Komodo-PoC.md`'s "Success criteria" and "Rollback / cleanup" sections. The PoC has answered the question it set out to answer; whether/when to migrate real stacks off Portainer is a separate, still-open decision.
+**All three PoC success criteria are now met, and the three throwaway PoC stacks have been torn down** (only the reusable Core/Mongo/Periphery infrastructure remains) — see `Komodo-PoC.md`'s "Success criteria" and "Rollback / cleanup" sections. The PoC has answered the question it set out to answer.
+
+**Migration timeline decided (2026-09-19): see [`Komodo-Migration.md`](Komodo-Migration.md).** Portainer's own [lifecycle page](https://docs.portainer.io/start/lifecycle) confirms 2.45 LTS (the version running here) loses security-patch support **May 2027** — real deadline, not the earlier unverified "~6 months" estimate. Plan: ~2hr biweekly sessions, bulk of the 21 routine stacks migrated by end of 2026, with `traefik` and `home-assistant` (highest blast radius / most recently touched) deliberately held for a January–April 2027 troubleshooting buffer ahead of the deadline. Komodo's shared auto-update schedule has already been shortened from its 3am-daily default to every 10 minutes, closer to Portainer's 5-minute polling.
 
 ## Layout
 
