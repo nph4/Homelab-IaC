@@ -1,12 +1,12 @@
 # Homelab-IaC
 
-Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed by [Portainer](https://www.portainer.io/) in GitOps mode — Portainer pulls each stack directly from this repo and polls it every few minutes to redeploy on new commits, rather than being edited by hand through Portainer's web UI. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
+Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed via GitOps rather than by hand through a web UI — historically all by [Portainer](https://www.portainer.io/), now being migrated stack-by-stack to [Komodo](https://github.com/moghtech/komodo) (see below). Whichever tool owns a given stack, it pulls the compose file directly from this repo and polls it to redeploy on new commits. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
 
-## ⚠️ Migrating off Portainer (PoC fully complete and closed out; migration decision not yet made)
+## ⚠️ Migrating off Portainer to Komodo (in progress)
 
 Portainer 3.0 drops the standalone Community Edition build. 2.x keeps getting security patches, but no new features; the only forward path (3.x) gates multi-host and GitOps behind a capped "3 Nodes Free" tier of the Business Edition, not a FLOSS release. Since a free/libre offering is a hard requirement here, this repo needs to move off Portainer before 2.x support ends.
 
-Leading candidate: **[Komodo](https://github.com/moghtech/komodo)** (GPL-3.0) — closest architectural match to this repo's model of git-tracked compose stacks deployed across multiple hosts, with no paywalled GitOps or multi-host features, and (confirmed 2026-09-19) no paid tier of any kind. Alternatives considered: [Coolify](https://github.com/coollabsio/coolify) (Apache-2.0, more PaaS-flavored, heavier lift) and CapRover (Apache-2.0, also PaaS-flavored).
+Chosen migration target: **[Komodo](https://github.com/moghtech/komodo)** (GPL-3.0) — closest architectural match to this repo's model of git-tracked compose stacks deployed across multiple hosts, with no paywalled GitOps or multi-host features, and (confirmed 2026-09-19) no paid tier of any kind. Alternatives considered: [Coolify](https://github.com/coollabsio/coolify) (Apache-2.0, more PaaS-flavored, heavier lift) and CapRover (Apache-2.0, also PaaS-flavored).
 
 **PoC (2026-09-12 to 2026-09-14): all 9 planned steps passed.** Core + Mongo stood up on nelson-nuc, Periphery agents connected on both nelson-nuc and quark-vm from that one Core, a throwaway duplicate `it-tools` stack deployed and redeployed via a real git push (verified by the deployed commit hash advancing, not just "the page loads"), and a second throwaway stack proven on quark-vm — all without touching any real Portainer-managed stack. Full detail in [`Komodo-PoC.md`](Komodo-PoC.md); research notes in [`CLAUDE.md`](CLAUDE.md).
 
@@ -30,17 +30,19 @@ stacks/
   quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent, portainer-agent
 ```
 
-Each subdirectory under `stacks/<host>/` is one Portainer stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references.
+Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Mid-migration, a given stack is managed by either Portainer or Komodo depending on whether it's been cut over yet (see [`Komodo-Migration.md`](Komodo-Migration.md) for the current per-stack status) — the compose file itself and this repo's conventions don't change either way.
 
 ## What runs manually
 
-A couple of things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
-- **Portainer** — must already exist before it can manage anything.
+A few things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
+- **Portainer** — must already exist before it can manage anything. Being phased out (see the migration section above), but still manages every stack not yet cut over to Komodo.
+- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside both this repo and Portainer. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf.
 - **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`).
 - **The Portainer Agent on quark-vm** ([`stacks/quark-vm/portainer-agent`](stacks/quark-vm/portainer-agent)) — the pipe Portainer uses to reach that host. Its compose file is committed for version tracking, but it's applied on the host by hand rather than via GitOps, since redeploying it restarts the agent Portainer is mid-deploy through.
 
 ## Architecture
 
+- **GitOps tooling (mid-migration):** stacks are being cut over one at a time from Portainer to [Komodo](https://github.com/moghtech/komodo) — see the migration section above and [`Komodo-Migration.md`](Komodo-Migration.md) for exactly which stacks have moved so far (6 of 21 routine stacks as of session 1; `traefik` and `home-assistant` deliberately held back until Q1 2027). Which tool owns a stack doesn't change anything else described in this section — same compose file, same conventions, only the poller/redeployer differs.
 - **Reverse proxy:** [Traefik v3](stacks/nelson-nuc/traefik) fronts everything. Dockerized services route in via labels; non-Docker upstreams (Proxmox, Portainer, the router, the NAS, UniFi, and the quark-vm-hosted services) are registered as static routes in `traefik/config.yml` instead. The shared external Docker network is named `proxy` — every container that needs Traefik routing must join it.
 - **TLS:** wildcard certs via Cloudflare DNS challenge (cert resolver `cloudflare`). Internal-only services live under `*.local.nelsonhickman.com`; anything internet-facing is under `*.nelsonhickman.com`.
 - **Secrets:** two patterns, both always an absolute host path (never relative — Portainer deploys from a plain Git clone with no fixed working directory):

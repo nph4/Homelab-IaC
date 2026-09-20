@@ -151,6 +151,13 @@ sections:
     target: newtab
     statusCheck: true
     id: 19_600_adventurelog
+  - title: Komodo
+    description: Docker Compose GitOps tool, replacing Portainer
+    icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/svg/komodo.svg
+    url: https://komodo.local.nelsonhickman.com
+    target: newtab
+    statusCheck: true
+    id: 20_600_komodo
 - name: Physical Devices
   icon: mdi-NetworkOutline
   displayData:
