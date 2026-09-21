@@ -216,7 +216,7 @@ sections:
     id: 1_841_namecheap
   - title: Crashplan Web Console
     description: Online console to restore data from
-    icon: favicon
+    icon: hl-crashplan
     url: https://www.crashplan.com/sign-in/
     target: newtab
     id: 2_841_crashplanwebconsole
