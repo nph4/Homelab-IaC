@@ -62,7 +62,7 @@ sections:
     id: 6_600_uptimekuma
   - title: Crashplan
     description: Code 42's backup utility
-    icon: favicon
+    icon: hl-crashplan
     url: https://crashplan.local.nelsonhickman.com/
     target: newtab
     statusCheck: true
