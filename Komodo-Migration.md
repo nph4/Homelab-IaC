@@ -36,7 +36,7 @@ Each session: pick the next stack group below, detach it from Portainer's GitOps
 2. **Static/simple routing, still no volumes:** `unifi` (static `config.yml` upstream, unaffected either way), `wallos`, `calibre-web`, `dashy` (already a `build:` context, same mechanism Komodo needs to prove for itself here). (4 stacks)
 3. **Stateful — external volume names already known, no rediscovery needed** (see `CLAUDE.md` for the exact `external: true` pins already validated under Portainer): `uptime-kuma` (`uptime_kuma_uptime-kuma`), `days-since-incident` (`days-since-incident_data`), `mealie` (`mealie2_mealie-data`), `nextcloud` (4 services: app/db/redis/cron, no volume-name landmine but more moving parts). (4 stacks)
 4. **Absolute-path `env_file` secrets — Periphery mount fix already proven in the stateful PoC:** `cloudflared`, `adventurelog`, `reactive-resume`. (3 stacks)
-5. **Remaining quark-vm stacks + the one stack needing extra device-passthrough care:** `crashplan`, `paperless`, `jellyfin` (GPU passthrough — `/dev/dri`, render group, hwaccel — verify the same way the original migration did). (3 stacks)
+5. **Remaining quark-vm stacks:** `crashplan`, `paperless`. (2 stacks.) `jellyfin` was originally planned here as an in-place adoption on nelson-nuc, but is now **superseded**: it moves straight from Portainer to a new dedicated GPU host — see "Planned: dedicated GPU host for Jellyfin" below. It stays on Portainer/nelson-nuc until that host is ready.
 
 That's 20 of the 21 routine stacks explicitly grouped above (`komodo` itself and `proxy` network are host prerequisites, not repo stacks). Pace works out to ~4 stacks/session across 5 sessions — sessions 1–2 should be fast enough to leave slack for whichever of sessions 3–5 runs long.
 
@@ -66,6 +66,47 @@ Cutover mechanics decided and proven, reusable for every remaining session:
 3. **Same-named resources across hosts need Komodo's `project_name` override**, since Stack *resource* names must be unique per Core but the underlying Docker Compose project name does not need to change. Used this for quark-vm's `dozzle-agent` (Komodo resource named `dozzle-agent-quark-vm`, `project_name: "dozzle-agent"` set explicitly to match its existing container label) so it recreated in place exactly like its nelson-nuc counterpart.
 
 All 6 stacks (`it-tools`, `dozzle`, `dozzle-agent` ×2, `vert`, `homebox`) verified against the same bar as every stack in the original Portainer migration: `RestartCount: 0`, correct `TZ`, `deployed_hash` == `latest_hash` in Komodo, Traefik `200` on the three web-facing ones (`dozzle` restarted once deliberately to force a fresh boot log — confirmed `"clients":2`, both agents connected with no errors).
+
+## Planned: dedicated GPU host for Jellyfin (decided 2026-09-21, not started)
+
+Jellyfin's transcoding on nelson-nuc (HD Graphics 620, VAAPI/QSV) has been the recurring pain point. New hardware bought to fix it: **Dell OptiPlex 7040 SFF** (i5-6500, 16GB RAM, 500GB SATA SSD) + **NVIDIA Quadro P1000** + a **2.5GbE NIC** (eBay listing; chipset not yet confirmed). This is a new Docker host, onboarded to Komodo from day one — greenfield, so no Portainer cutover for the host itself. Timing is open; it competes with the routine sessions above for the same biweekly 2 hours, so slot it in when the hardware is ready rather than forcing it.
+
+### Decision: Ubuntu LTS + Docker + Komodo Periphery (same model as nelson-nuc)
+
+Options considered and why this one won:
+- **Ubuntu + Jellyfin as a native app** — rejected. Docker is namespaces/cgroups, not virtualization, so a container transcodes at native speed; going native gains almost nothing and makes the host invisible to this repo (the failure mode most of this file's history is about).
+- **Proxmox + LXC, Jellyfin native** — rejected for now. Real upside is snapshots (would have simplified the Home Assistant upgrade backups), but GPU passthrough into an unprivileged LXC needs host/guest NVIDIA driver versions kept in lockstep with manual cgroup rules, and a whole second stack (plus Terraform/Ansible) to keep IaC-clean, on a single node with one SSD — most of Proxmox's payoff (ZFS mirror, clustering, HA) is unavailable.
+- **Proxmox + one Ubuntu VM with the P1000 passed through (VFIO)** — the best version of "I want Proxmox", but IOMMU grouping on the Q170 chipset may need the ACS override patch, and the GPU becomes exclusive to that VM. Same second-stack cost.
+- **Deciding factor is reversibility, not performance** — NVENC is fixed-function silicon, so every option transcodes identically. With Ubuntu + Docker the host is disposable (everything lives in the repo + Komodo), so adopting Proxmox later costs an afternoon. **Revisit Proxmox only when a real service needs something Docker can't do**; Ubuntu + KVM/libvirt covers a one-off VM without it.
+
+### Hardware facts to keep in mind
+
+- 7040 SFF has **one PCIe x16 + one x4, both half-height**, a **180W PSU**, 4 DIMM slots (64GB max), one M.2 2280 slot. P1000 (47W, no aux power, low-profile) fits the budget; the NIC takes the other slot and **needs a low-profile bracket** — confirm the listing includes one.
+- **Confirm the NIC chipset** (Realtek RTL8125 vs Intel I226-V). RTL8125 may need the vendor `r8125` DKMS driver on some kernels; I226-V works out of the box.
+- **2.5G only helps on the NAS hop** (`/mnt/nas`) — verify the switch port and NAS side are actually 2.5G, or the card changes nothing.
+- **P1000 (Pascal) has no AV1 encode *and* no AV1 decode.** Keep `AllowAv1Encoding` **false** (see memory: HD 620 note applies here too); AV1 sources will software-decode on the i5-6500 — fine at 1080p, painful at 4K. If 4K AV1 becomes common, that's the next hardware trigger (Ampere+ GPU), not a config problem.
+- Once a dGPU is installed the BIOS may disable the iGPU; not worth fighting for — Skylake QuickSync is what we're leaving behind.
+
+### Plan (order matters; nothing on nelson-nuc is touched until the last step)
+
+1. **Prep the box.** Update the Dell BIOS. Confirm the NIC chipset/bracket and that the switch/NAS path is 2.5G. Install current Ubuntu LTS, create user `nelson` with **UID/GID 1000** (matches Jellyfin's `PUID`/`PGID` and the `/config` ownership being copied), enable SSH key auth.
+2. **Base host state** (all host-side, invisible to this repo — write each one down in this file when done, same as the prune crontabs): Docker Engine + **compose v2 plugin** (quark-vm only has the old standalone binary), Tailscale, the `/mnt/nas` mount in `fstab` (copy mount type/options from nelson-nuc), the external `proxy` Docker network, and `/home/nelson/containers/`.
+3. **NVIDIA driver + container toolkit.** Install via `ubuntu-drivers`, preferring Canonical's **prebuilt signed kernel-module packages** over DKMS (avoids rebuild-on-kernel-update breakage and Secure Boot MOK enrollment). **Check at install time that the current driver branch still supports Pascal** — Pascal was slated to drop out after the 580 series. Then `nvidia-container-toolkit` + `nvidia-ctk runtime configure --runtime=docker`. Verify with `nvidia-smi` on the host and in a throwaway `nvidia/cuda` container.
+4. **Pin the driver.** `apt-mark hold` the NVIDIA driver/utils packages and exclude them from unattended-upgrades. A driver upgrade without a reboot yields `Failed to initialize NVML: Driver/library version mismatch` and every transcode dies until reboot. Upgrade deliberately, reboot right after.
+5. **Komodo Periphery on the new host**, using the outbound-only privileged-onboarding-key pattern from the PoC (no `address`, no inbound port). Root dir must be under the user's home if there's no passwordless sudo. Add the read-only `/home/nelson/containers` mount only if a stack there needs an absolute-path `env_file` (Jellyfin's compose doesn't).
+6. **Repo side:** new `stacks/<new-hostname>/jellyfin/docker-compose.yml`. Changes vs. the nelson-nuc file: drop `devices: /dev/dri` and `group_add: "109"`, add the NVIDIA device reservation, add the transcode temp dir as tmpfs, publish 8096 on the LAN/Tailscale address so Traefik can reach it (see step 8), keep the 1900/7359 UDP discovery ports. Add the new host to the README layout/services tables. (Compose file not written yet — deliberately deferred.)
+7. **Copy the Jellyfin config — the landmine-shaped step.** A fresh `/config` means a **new `ServerId`** and every user loses watch history and library state. Stop the container on nelson-nuc, `rsync -a` `/home/nelson/containers/Jellyfin/config` to the new host (preserving ownership), start Jellyfin on the new host, and confirm the **`ServerId` matches** the old one (same check used in the original Phase 3 migration). Leave the nelson-nuc config directory in place for a good while as the rollback.
+8. **Routing — hidden cost.** Traefik on nelson-nuc discovers services via the *local* Docker socket, so the new host's container **can't use Docker labels**. It needs a **static route in `config.yml`** pointing at the new host's address (same pattern `unifi`, `crashplan` and `paperless` already use), which means touching Traefik's host-synced `config.yml` (repo copy + manual sync to `/home/nelson/containers/traefik/data/`, per the traefik gotcha above). Pi-hole needs no change — `jellyfin.local.nelsonhickman.com` still resolves to nelson-nuc's Traefik. Do this as the cutover switch, after the new instance is verified on its own IP.
+9. **Switch acceleration inside Jellyfin** (UI setting stored in `/config`, not compose): VAAPI → **NVENC**, enable HEVC/H.264 (+10-bit) decode, enable tone-mapping, leave AV1 encode off, point the transcode path at the tmpfs mount. Test a forced HDR→SDR transcode and a couple of concurrent 1080p streams; watch `nvidia-smi` for the `ffmpeg` process to confirm it's actually on the GPU.
+10. **Cutover + Portainer cleanup.** Disable Portainer's polling on the nelson-nuc `jellyfin` stack (same `AutoUpdate: null` call as session 1), stop that container, flip the static route in `config.yml`, verify through Traefik (`302` to `/web/`), then remove the Portainer stack. **This replaces the in-place Komodo adoption of `jellyfin` in session 5** — it moves straight from Portainer to Komodo *on the new host*, skipping a pointless intermediate move on nelson-nuc.
+11. **Afterward:** record host-side state in `CLAUDE.md` (fstab, NVIDIA hold, driver branch, NIC driver), update the README service inventory, and consider whether any other GPU-friendly service should share the P1000 while Jellyfin is idle.
+
+### Open questions
+
+- Hostname for the new box (and its Tailscale name) — undecided.
+- NIC chipset and low-profile bracket — unconfirmed (eBay listing wasn't readable).
+- 7040 SFF fan/thermals under sustained transcode with the P1000 — unverified, watch GPU/CPU temps in the first week.
+- Whether the same host should later also take over other media-adjacent stacks (`calibre-web`, etc.) — out of scope for now; nothing decided.
 
 ## Open items to resolve during the migration, not before it
 
