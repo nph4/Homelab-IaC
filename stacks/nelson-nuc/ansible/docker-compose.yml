@@ -16,6 +16,9 @@ services:
       - /home/nelson/containers/ansible/data:/etc/ansible
       # SSH key for the `ansible` user on managed hosts, plus known_hosts, so both survive a redeploy
       - /home/nelson/containers/ansible/ssh:/root/.ssh
+      # /ansible is the image's WORKDIR (where the web terminal lands) - persist it
+      # so the playbook repo (github.com/nph4/ansible) cloned there survives a redeploy
+      - /home/nelson/containers/ansible/repo:/ansible
 
     networks:
       - proxy
