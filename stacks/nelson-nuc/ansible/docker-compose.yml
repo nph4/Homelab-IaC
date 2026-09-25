@@ -14,6 +14,8 @@ services:
 
     volumes:
       - /home/nelson/containers/ansible/data:/etc/ansible
+      # SSH key for the `ansible` user on managed hosts, plus known_hosts, so both survive a redeploy
+      - /home/nelson/containers/ansible/ssh:/root/.ssh
 
     networks:
       - proxy
