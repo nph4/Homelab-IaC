@@ -51,6 +51,10 @@ services:
       - "traefik.http.routers.ansible.entrypoints=https"
       - "traefik.http.routers.ansible.tls=true"
       - "traefik.http.routers.ansible.tls.certresolver=cloudflare"
+      # Basic auth in front of the terminal: it's a root shell into the Ansible
+      # control node. Reuses the file-provider middleware (and htpasswd secret)
+      # already protecting the Traefik dashboard.
+      - "traefik.http.routers.ansible.middlewares=traefik-auth@file"
 
       - "traefik.http.services.ansible.loadbalancer.server.port=7681"
 
