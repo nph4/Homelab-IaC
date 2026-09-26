@@ -4,6 +4,8 @@ services:
   ansible:
     build: .
     image: ansible-control:14.4.0
+    # Built locally, never on a registry: without this, Komodo's `docker compose pull` fails on the image
+    pull_policy: build
     container_name: ansible
     restart: unless-stopped
 
