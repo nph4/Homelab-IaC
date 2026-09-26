@@ -2,7 +2,8 @@ version: "3.8"
 
 services:
   ansible:
-    image: peco602/ansible-linux-docker:latest
+    build: .
+    image: ansible-control:14.4.0
     container_name: ansible
     restart: unless-stopped
 
