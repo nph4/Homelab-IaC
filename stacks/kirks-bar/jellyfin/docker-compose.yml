@@ -1,0 +1,38 @@
+services:
+  jellyfin:
+    image: docker.io/linuxserver/jellyfin:10.11.6
+    container_name: Jellyfin
+    restart: unless-stopped
+
+    ports:
+      # Web UI. Traefik on nelson-nuc can't discover containers on this host, so it reaches
+      # Jellyfin through a static route in traefik's config.yml pointing at this port.
+      - "8096:8096/tcp"
+      # Keep UDP discovery on the LAN
+      - "1900:1900/udp"
+      - "7359:7359/udp"
+
+    environment:
+      PUID: "1000" # kirk
+      PGID: "1000"
+      TZ: "America/Los_Angeles"
+
+    # Quadro P1000 for NVENC/NVDEC (driver + container toolkit from homelab-ansible's nvidia.yml)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, video, compute, utility]
+
+    volumes:
+      - /home/kirk/containers/jellyfin/config:/config
+      - /mnt/nas/media/video/Movies:/data/Movies
+      - /mnt/nas/media/video/TV:/data/TV
+      - /mnt/nas/media/Books:/data/Books
+      # Transcode scratch space in RAM; Jellyfin's transcode path is set to /transcode
+      - type: tmpfs
+        target: /transcode
+        tmpfs:
+          size: 4294967296 # 4GiB
