@@ -56,6 +56,15 @@ http:
         certResolver: cloudflare
       service: paperless
 
+    # Runs on kirks-bar (GPU host), so no Docker labels; same rule and no middlewares, as its old labels had
+    jellyfin:
+      entryPoints:
+        - https
+      rule: "Host(`jellyfin.local.nelsonhickman.com`)"
+      tls:
+        certResolver: cloudflare
+      service: jellyfin
+
 
     router:
       entryPoints:
@@ -111,6 +120,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://100.76.105.3:8010"
+        passHostHeader: true
+
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.88.23:8096"
         passHostHeader: true
 
 

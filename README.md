@@ -28,6 +28,7 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
   quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent, portainer-agent
+  kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23), GPU host — jellyfin
 ```
 
 Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Mid-migration, a given stack is managed by either Portainer or Komodo depending on whether it's been cut over yet (see [`Komodo-Migration.md`](Komodo-Migration.md) for the current per-stack status) — the compose file itself and this repo's conventions don't change either way.
@@ -36,8 +37,9 @@ Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.
 
 A few things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
 - **Portainer** — must already exist before it can manage anything. Being phased out (see the migration section above), but still manages every stack not yet cut over to Komodo.
-- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside both this repo and Portainer. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04, no stacks yet) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand.
-- **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`).
+- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside both this repo and Portainer. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand.
+- **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`). Not needed on kirks-bar, which has no Traefik of its own: its stacks publish ports and get static routes in `traefik/config.yml`.
+- **The NVIDIA driver and container toolkit on kirks-bar** — installed by the ansible repo's `nvidia.yml` (driver branch `580-server`, the last with Pascal support). Kernel and driver updates are kept out of unattended-upgrades and applied by its `updates.yml`, which reboots.
 - **The Portainer Agent on quark-vm** ([`stacks/quark-vm/portainer-agent`](stacks/quark-vm/portainer-agent)) — the pipe Portainer uses to reach that host. Its compose file is committed for version tracking, but it's applied on the host by hand rather than via GitOps, since redeploying it restarts the agent Portainer is mid-deploy through.
 
 ## Architecture
@@ -50,7 +52,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
   - Docker `secrets:` block pointing at a file on the host, e.g. `/home/nelson/containers/traefik/cf_api_token.txt` (used by traefik, nextcloud)
   - `env_file:` pointing at a file on the host, e.g. `/home/nelson/containers/mealie/.env` (used when the upstream image expects env vars)
 - **Image versions:** pinned to explicit versions everywhere, e.g. `traefik:v3.0`, `postgres:16`, `nextcloud:31-apache`. `ghcr.io/vert-sh/vert` intentionally stays on `latest` because it publishes no versioned tags. Stacks built from a local `Dockerfile` (`build: .`) pin their base image and packages there instead, and tag the image with the version, e.g. `ansible-control:14.4.0` (the `ansible` package version). Under Komodo they also need `pull_policy: build`, since Komodo runs `docker compose pull` first and would fail trying to pull the local tag from Docker Hub.
-- **Volumes:** named Docker volumes for stateful data; bind mounts under `/home/nelson/containers/<stack>/` on nelson-nuc, and `/srv/<stack>/` on quark-vm.
+- **Volumes:** named Docker volumes for stateful data; bind mounts under `/home/nelson/containers/<stack>/` on nelson-nuc, `/srv/<stack>/` on quark-vm, and `/home/kirk/containers/<stack>/` on kirks-bar.
 - **Timezone:** every container sets `TZ=America/Los_Angeles` in its `environment` block.
 
 ## Services
@@ -63,7 +65,6 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | `cloudflared` | Cloudflare Tunnel connector for internet-facing services |
 | `mealie` | Recipe manager & meal planner |
 | `nextcloud` | File sync / groupware |
-| `jellyfin` | Media server |
 | `home-assistant` | Home automation hub |
 | `unifi` | UniFi network controller |
 | `dashy` | Homepage / dashboard for all the above |
@@ -87,6 +88,12 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | `crashplan` | CrashPlan backup client |
 | `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
 | `portainer-agent` | Portainer connectivity agent for this host (version tracks the Portainer server's LTS) |
+
+**kirks-bar**
+
+| Stack | What it is |
+|---|---|
+| `jellyfin` | Media server, NVENC transcoding on the Quadro P1000. Routed by a static entry in `traefik/config.yml`, since Traefik can't read Docker labels on another host |
 
 ## Adding a service
 
