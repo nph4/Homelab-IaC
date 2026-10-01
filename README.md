@@ -109,3 +109,8 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 ## More context
 
 [`CLAUDE.md`](CLAUDE.md) is Claude Code's working notes for this repo — mainly a detailed log of the GitOps migration itself (what broke, what got fixed, and why). Worth checking if a service starts behaving unexpectedly after a redeploy, since it often explains prior drift between what's live and what's in the repo.
+
+## Long-Term TODO
+- Implement an authentication suite
+- Set-up log shipping for items not in docker
+- Setup full-blown Gitops, CI/CD pipeline
