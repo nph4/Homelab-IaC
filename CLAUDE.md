@@ -118,7 +118,7 @@ Alternatives evaluated against the hard requirements (multi-host, GitOps/IaC, FL
 
 Decided **not** to pursue exposing a Komodo webhook through the existing `cloudflared` tunnel as part of the initial POC — same LAN-only-hostname reachability problem already solved for Portainer via polling instead (Phase 4 above) will recur identically for Komodo's webhook receiver, so the POC plan defaults to polling and treats webhook-via-tunnel as an explicit stretch goal, not a blocker.
 
-Full POC plan: [`Komodo-PoC.md`](Komodo-PoC.md). Summary tracked in [`README.md`](README.md)'s "Migrating off Portainer" section.
+Full POC plan: [`Komodo-PoC.md`](Komodo-PoC.md). Summary in the "Summary" section at the top of [`Komodo-Migration.md`](Komodo-Migration.md) (moved out of README once the migration finished).
 
 ## Komodo POC: Core/Mongo/Periphery standup (2026-09-12)
 
@@ -128,7 +128,7 @@ One finding worth surfacing at this level since it affects the rest of the POC's
 
 ## Komodo POC: steps 4–9 completed (2026-09-13/14)
 
-All remaining POC steps (quark-vm Periphery, the it-tools push→redeploy proof, the second-host proof, the GUI evaluation) are done. Full step-by-step record is in [`Komodo-PoC.md`](Komodo-PoC.md)'s Progress Log; summary in `README.md`. Findings worth keeping at this level because they'd otherwise be re-discovered the hard way on any future Komodo work:
+All remaining POC steps (quark-vm Periphery, the it-tools push→redeploy proof, the second-host proof, the GUI evaluation) are done. Full step-by-step record is in [`Komodo-PoC.md`](Komodo-PoC.md)'s Progress Log; summary at the top of `Komodo-Migration.md`. Findings worth keeping at this level because they'd otherwise be re-discovered the hard way on any future Komodo work:
 
 - **Komodo Core's HTTP login route isn't in its own published API docs.** Had to `curl` Core's own minified frontend JS bundle and grep it to find the real path: `POST /auth/login/{LoginType}` (e.g. `/auth/login/LoginLocalUser`) with the body as bare `{username, password}` — *not* the `{"type", "params"}` envelope that `/read`, `/write`, and `/execute` all use. Worth remembering verbatim for any future scripted access to Core's API rather than re-deriving it from the bundle again.
 - **Komodo's `auto_update`/`poll_for_updates` stack flags are not a Portainer-style continuous poll.** They're driven by one Core-wide scheduled Procedure ("Global Auto Update") that defaults to running **once a day at 03:00**, not every few minutes. Proved the redeploy mechanism itself works by invoking that same execute action (`DeployStackIfChanged`) directly rather than waiting for the schedule — but a real migration needs an explicit decision here (shorten the shared schedule, or rely on manual/webhook triggers between daily runs), since silently keeping Komodo's default would be a big regression from Portainer's 5-minute cadence.

@@ -1,5 +1,13 @@
 # Komodo Migration Plan
 
+## Summary (moved here from README when the migration finished)
+
+- **Why:** Portainer 3.0 dropped the standalone free Community Edition. 2.x kept security patches but no new features, and 2.45 LTS (the version here) lost security support in May 2027. 3.x puts multi-host and GitOps behind a capped "3 Nodes Free" tier of the Business Edition. A free/libre tool was a hard requirement.
+- **Why Komodo:** [Komodo](https://github.com/moghtech/komodo) (GPL-3.0) is the closest match to this repo's model (git-tracked compose stacks across several hosts), with no paywalled GitOps or multi-host features and no paid tier at all. Also considered: Coolify and CapRover (both Apache-2.0, more PaaS-flavored, heavier lift), and k3s + ArgoCD/Flux (a later, separate project). Research notes are in `CLAUDE.md` ("Portainer migration research").
+- **PoC (2026-09-12 to 2026-09-19):** all 9 steps plus the stateful follow-up passed (`Komodo-PoC.md`): multi-host Core/Periphery, a real push→redeploy, external named-volume pinning, and absolute-path `env_file`/secrets once Periphery got a read-only `/home/nelson/containers` mount.
+- **Migration:** session 1 on 2026-09-19 (6 stateless stacks), then the rest on 2026-10-03: sessions 2–5, then `home-assistant` and `traefik` (both moved early from the planned Jan–Apr 2027 buffer). Portainer was decommissioned the same day. 21 stacks in total, all with data verified intact.
+- **Lessons that still apply to Komodo:** "Deploy Changed Stacks" (every 5 minutes) is what deploys repo changes, since "Global Auto Update" only reacts to new images under the same tag and now runs daily to stay under Docker Hub's anonymous rate limit. `build:` stacks need `run_build: true`, `auto_pull: false` and their build-context files in `config_files`. Every `env_file`/`secrets` path must be visible to the host's Periphery agent.
+
 Status: **all 21 stacks migrated (2026-10-03).** `home-assistant` and `traefik` were moved early, at the user's call, instead of in the Jan–Apr 2027 buffer. Portainer manages no stacks. **Portainer decommissioned the same day**, so the migration is complete. quark-vm is fully off Portainer: its agent and environment were removed on 2026-10-03. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)

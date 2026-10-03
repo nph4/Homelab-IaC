@@ -1,6 +1,6 @@
 # Komodo Proof-of-Concept Plan
 
-Status: **PoC fully complete and closed out (2026-09-19).** All 9 original steps done (2026-09-13/14), the stateful follow-up done (named-volume pinning works unmodified, `env_file` needed one Periphery mount fix, now applied), and all three success criteria met — including a real user UI walkthrough confirming Komodo covers every Portainer GUI operation in daily use, and confirmation Komodo has no paid tier at all. All three throwaway POC stacks have been torn down; only the reusable Core/Mongo/Periphery infrastructure remains. See the README's "Migrating off Portainer" section for why this is happening; a real migration decision has not yet been made. See "Progress Log" and "Rollback / cleanup" below for the full record.
+Status: **PoC fully complete and closed out (2026-09-19).** All 9 original steps done (2026-09-13/14), the stateful follow-up done (named-volume pinning works unmodified, `env_file` needed one Periphery mount fix, now applied), and all three success criteria met — including a real user UI walkthrough confirming Komodo covers every Portainer GUI operation in daily use, and confirmation Komodo has no paid tier at all. All three throwaway POC stacks have been torn down; only the reusable Core/Mongo/Periphery infrastructure remains. See the the "Summary" at the top of `Komodo-Migration.md` for why this happened; a real migration decision has not yet been made. See "Progress Log" and "Rollback / cleanup" below for the full record.
 
 ## Goal
 

@@ -1,40 +1,6 @@
 # Homelab-IaC
 
-Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed via GitOps rather than by hand through a web UI — by [Komodo](https://github.com/moghtech/komodo) (until 2026-10-03, by [Portainer](https://www.portainer.io/); see below). Komodo pulls each compose file directly from this repo and redeploys a stack within 5 minutes of a commit that changes it. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
-
-## Migrated off Portainer to Komodo (complete 2026-10-03)
-
-Portainer 3.0 drops the standalone Community Edition build. 2.x keeps getting security patches, but no new features; the only forward path (3.x) gates multi-host and GitOps behind a capped "3 Nodes Free" tier of the Business Edition, not a FLOSS release. Since a free/libre offering is a hard requirement here, this repo needs to move off Portainer before 2.x support ends.
-
-Chosen migration target: **[Komodo](https://github.com/moghtech/komodo)** (GPL-3.0) — closest architectural match to this repo's model of git-tracked compose stacks deployed across multiple hosts, with no paywalled GitOps or multi-host features, and (confirmed 2026-09-19) no paid tier of any kind. Alternatives considered: [Coolify](https://github.com/coollabsio/coolify) (Apache-2.0, more PaaS-flavored, heavier lift) and CapRover (Apache-2.0, also PaaS-flavored).
-
-**PoC (2026-09-12 to 2026-09-14): all 9 planned steps passed.** Core + Mongo stood up on nelson-nuc, Periphery agents connected on both nelson-nuc and quark-vm from that one Core, a throwaway duplicate `it-tools` stack deployed and redeployed via a real git push (verified by the deployed commit hash advancing, not just "the page loads"), and a second throwaway stack proven on quark-vm — all without touching any real Portainer-managed stack. Full detail in [`Komodo-PoC.md`](Komodo-PoC.md); research notes in [`CLAUDE.md`](CLAUDE.md).
-
-One thing to weigh before committing to a real migration: **auto-redeploy cadence is coarser than Portainer's out of the box.** Komodo's default is a single daily scheduled job (3am), not Portainer's continuous 5-minute poll — proven working here by invoking that job's action directly rather than waiting for it to fire. A real migration needs either a shorter schedule or a defined manual/webhook-triggered pattern between runs.
-
-**Stateful follow-up PoC (2026-09-19): both hard patterns validated.** The uptime-kuma/mealie external-volume-pinning trick works identically under Komodo, no changes needed. Absolute-path `env_file`/Docker `secrets:` hit a real blocker — Komodo's Periphery agent runs `docker compose` as a subprocess inside its own container and (unlike Portainer) couldn't see any host path outside its mounted root — fixed once by adding a read-only `/home/nelson/containers` mount to Periphery, mirroring the fix Portainer itself needed in Phase 2. Detail in `Komodo-PoC.md`'s "Follow-up" section.
-
-**GUI walkthrough (2026-09-19): confirmed usable.** A real hands-on comparison found every Portainer GUI operation used day to day (logs, redeploy, deployed-commit visibility, drift) has a Komodo equivalent — names and layout differ, expected friction from switching stacks, not a functional gap.
-
-**All three PoC success criteria are now met, and the three throwaway PoC stacks have been torn down** (only the reusable Core/Mongo/Periphery infrastructure remains) — see `Komodo-PoC.md`'s "Success criteria" and "Rollback / cleanup" sections. The PoC has answered the question it set out to answer.
-
-**Migration timeline decided (2026-09-19): see [`Komodo-Migration.md`](Komodo-Migration.md).** Portainer's own [lifecycle page](https://docs.portainer.io/start/lifecycle) confirms 2.45 LTS (the version running here) loses security-patch support **May 2027** — real deadline, not the earlier unverified "~6 months" estimate. Plan: ~2hr biweekly sessions, bulk of the 21 routine stacks migrated by end of 2026, with `traefik` and `home-assistant` (highest blast radius / most recently touched) deliberately held for a January–April 2027 troubleshooting buffer ahead of the deadline. Repo changes deploy through a Komodo procedure, "Deploy Changed Stacks", that runs every 5 minutes and redeploys only stacks whose files changed (Komodo's own "Global Auto Update" only reacts to new images under the same tag, so it doesn't cover this), and Komodo Core is now reachable at `https://komodo.local.nelsonhickman.com` through Traefik.
-
-**Session 1 complete (2026-09-19): 6 of 21 routine stacks cut over** (`it-tools`, `dozzle`, `dozzle-agent` on both hosts, `vert`, `homebox`) — all verified healthy, three with zero downtime. Established the real cutover mechanics (disable Portainer polling via its API, match the Komodo Stack's Docker Compose project name for an in-place recreate) that the remaining sessions will reuse. Detail in `Komodo-Migration.md`.
-
-**Session 2 complete (2026-10-03): 10 of 21** (`unifi`, `wallos`, `calibre-web`, `dashy`), all healthy with their existing data reattached.
-
-**Session 3 complete (2026-10-03): 14 of 21** (`days-since-incident`, `uptime-kuma`, `mealie`, `nextcloud`), all with their existing data confirmed intact.
-
-**Session 4 complete (2026-10-03): 17 of 21** (`cloudflared`, `adventurelog`, `reactive-resume`). Every routine nelson-nuc stack is now on Komodo; Portainer there manages only `traefik` and `home-assistant`.
-
-**Session 5 complete (2026-10-03): 19 of 21** (`crashplan`, `paperless` on quark-vm). Every routine stack is on Komodo.
-
-**`home-assistant` migrated early (2026-10-03): 20 of 21.**
-
-**`traefik` migrated (2026-10-03): all 21 stacks are on Komodo.**
-
-**Portainer decommissioned (2026-10-03).** The server container and image on nelson-nuc are removed, as are its Traefik route and dashy tile. Its data volume is kept, with a tar backup in `~/portainer-backup/`. The quark-vm agent was removed earlier the same day.
+Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed via GitOps rather than by hand through a web UI, by [Komodo](https://github.com/moghtech/komodo). Komodo pulls each compose file directly from this repo and redeploys a stack within 5 minutes of a commit that changes it. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
 
 ## Layout
 
@@ -45,12 +11,12 @@ stacks/
   kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
 ```
 
-Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Every stack is deployed by Komodo; see [`Komodo-Migration.md`](Komodo-Migration.md) for how each was cut over.
+Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Every stack is deployed by Komodo.
 
 ## What runs manually
 
 A few things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
-- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside this repo, since it's what deploys the repo. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand. Core's port is bound to nelson-nuc's LAN IP (`192.168.88.101:9120`), and that's the address the remote agents dial. It isn't bound to the Tailscale IP, because Docker would start Core before `tailscale0` came up at boot and the bind would fail.
+- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside this repo, since it's what deploys the repo. Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand. Core's port is bound to nelson-nuc's LAN IP (`192.168.88.101:9120`), and that's the address the remote agents dial. It isn't bound to the Tailscale IP, because Docker would start Core before `tailscale0` came up at boot and the bind would fail.
 - **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`). Not needed on kirks-bar, which has no Traefik of its own: its stacks publish ports and get static routes in `traefik/config.yml`.
 - **The NVIDIA driver and container toolkit on kirks-bar** — installed by the ansible repo's `nvidia.yml` (driver branch `580-server`, the last with Pascal support). Kernel and driver updates are kept out of unattended-upgrades and applied by its `updates.yml`, which reboots.
 
@@ -105,7 +71,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | Stack | What it is |
 |---|---|
 | `jellyfin` | Media server, NVENC transcoding on the Quadro P1000. Routed by a static entry in `traefik/config.yml`, since Traefik can't read Docker labels on another host |
-| `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` (Komodo-only, never on Portainer) |
+| `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
 
 ## Adding a service
 
@@ -117,10 +83,12 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 6. For non-Docker upstreams (host IPs, Tailscale IPs), add a router + service entry to `stacks/nelson-nuc/traefik/config.yml`
 7. Use absolute paths for all volume mounts, env_file references, and secret files
 8. Set `TZ=America/Los_Angeles` in the `environment` block
+9. Add a Pi-hole Local DNS record for the `*.local.nelsonhickman.com` hostname, pointing at `192.168.88.101` (Traefik). Internet-facing hostnames also need a Cloudflare Tunnel public hostname and DNS record
+10. Create the stack in Komodo on the right server: repo `nph4/Homelab-IaC`, branch `main`, run directory `stacks/<host>/<service-name>`, file path `docker-compose.yml`. For a `build:` stack, also set `run_build: true` and `auto_pull: false`, and list its build-context files under `config_files`. Then deploy it once; after that, commits deploy within 5 minutes
 
 ## More context
 
-[`CLAUDE.md`](CLAUDE.md) is Claude Code's working notes for this repo — mainly a detailed log of the GitOps migration itself (what broke, what got fixed, and why). Worth checking if a service starts behaving unexpectedly after a redeploy, since it often explains prior drift between what's live and what's in the repo.
+[`CLAUDE.md`](CLAUDE.md) is Claude Code's working notes for this repo: a detailed log of what broke, what got fixed, and why. Worth checking if a service starts behaving unexpectedly after a redeploy, since it often explains prior drift between what's live and what's in the repo. [`Komodo-Migration.md`](Komodo-Migration.md) and [`Komodo-PoC.md`](Komodo-PoC.md) record how the repo moved to its current deploy tool.
 
 ## Long-Term TODO
 - Implement an authentication suite
