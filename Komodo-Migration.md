@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 5 complete (2026-10-03), 19 of 21 stacks migrated: every routine stack.** Left: the held-back `traefik` and `home-assistant` (Jan–Apr 2027 buffer), then the Portainer decommission. quark-vm is fully off Portainer: its agent and environment were removed on 2026-10-03. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **20 of 21 stacks migrated (2026-10-03).** `home-assistant` was moved early, at the user's call. Left: `traefik` (held for the Jan–Apr 2027 buffer; do it from the LAN), then the Portainer decommission. quark-vm is fully off Portainer: its agent and environment were removed on 2026-10-03. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -121,6 +121,14 @@ Backup: live `pg_dump -Fc` of `paperless-postgres` (72 tables) in `~/komodo-s5-b
 - `paperless` (3 containers): `healthy`, both secrets mounted, 215 documents before and after, `302` to login.
 
 **Found during this session: quark-vm's NAS mount has been down since the 2026-10-02 power loss.** quark-vm booted at 11:42 PDT, before the NAS (`192.168.88.68`) was reachable, so the `/etc/fstab` CIFS mount at `/mnt/nas` failed (`mount error(113): could not connect`), and systemd doesn't retry. CrashPlan's `/storage` has been an empty directory since then, already before the cutover. Fixing it needs sudo on quark-vm. See CLAUDE.md for the commands and the longer-term fstab fix.
+
+## home-assistant migrated early (2026-10-03)
+
+Pulled forward from the 2027 buffer at the user's request. It had been stable on 2026.9.0 since 2026-09-08, and the cutover had worked 19 times by then. Same procedure as the others: create the Komodo stack `home-assistant` (matching the compose project), delete Portainer stack 115, cold-tar `/home/nelson/containers/home_assist` (157 MB, to `~/komodo-s3-backup/home_assist_config_pre-komodo_*.tgz`), then deploy. Downtime was about 25s (14:38:43–14:39:18 PDT).
+
+Verified with a before/after snapshot from `.storage` and the recorder DB, piped into `docker exec -i homeassistant python3 -` (no nested quoting): `config_entries=18 devices=37 zha_devices=8 entities=306 recorder_schema=53`, identical before and after. Also: 2026.9.0 unchanged, privileged mode intact, `TZ` set, compose from Komodo's clone, `200` through Traefik, no ERROR/CRITICAL lines. Zigbee: ZHA's config entry uses `/dev/ttyACM0` (ezsp), present through privileged mode. `zigbee.db-wal` was written after the restart, and 3 of 8 devices reported within 10 minutes; the other 5 include the 3 already-dead water sensors.
+
+**Note:** the compose file's `devices: /dev/serial/by-id:/dev/serial/by-id` has never done anything. Docker can't map a directory of symlinks as a device, and `/dev/serial` doesn't exist in the container, now or under Portainer. ZHA works only because privileged mode exposes `/dev/ttyACM0`. If the dongle ever enumerates as `ttyACM1` (another USB serial device, or a re-plug), ZHA won't find it. The robust fix is to map the stable symlink to a fixed name, e.g. `/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20231007170118-if00:/dev/zigbee`, and point ZHA at `/dev/zigbee`. That's a ZHA reconfiguration, so it's left for a deliberate change.
 
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 

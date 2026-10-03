@@ -28,7 +28,9 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **Session 4 complete (2026-10-03): 17 of 21** (`cloudflared`, `adventurelog`, `reactive-resume`). Every routine nelson-nuc stack is now on Komodo; Portainer there manages only `traefik` and `home-assistant`.
 
-**Session 5 complete (2026-10-03): 19 of 21** (`crashplan`, `paperless` on quark-vm). Every routine stack is on Komodo. Only `traefik` and `home-assistant` remain on Portainer, held for the Jan–Apr 2027 buffer.
+**Session 5 complete (2026-10-03): 19 of 21** (`crashplan`, `paperless` on quark-vm). Every routine stack is on Komodo.
+
+**`home-assistant` migrated early (2026-10-03): 20 of 21.** Only `traefik` remains on Portainer, held for the Jan–Apr 2027 buffer.
 
 ## Layout
 
