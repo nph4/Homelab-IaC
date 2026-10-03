@@ -17,9 +17,11 @@ services:
       - /home/nelson/containers/home_assist:/config
       - /etc/localtime:/etc/localtime:ro
 
-    # Stable USB device access (Zigbee dongle)
+    # Zigbee dongle, mapped from its stable by-id symlink to a fixed name so ZHA
+    # (configured for /dev/zigbee) doesn't depend on it enumerating as ttyACM0.
+    # Docker resolves the symlink when the container is created.
     devices:
-      - /dev/serial/by-id:/dev/serial/by-id
+      - /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20231007170118-if00:/dev/zigbee
 
     labels:
       - "traefik.enable=true"
