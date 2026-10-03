@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 1 complete (2026-09-19), 6 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 2 complete (2026-10-03), 10 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -26,6 +26,8 @@ Komodo's `auto_update`/`poll_for_updates` stack flags are driven by one shared C
 
 Worth remembering: the English-format shorthand `"Every 10 minutes"` silently produces an **invalid** Quartz cron expression in this Komodo version (`0 0/10 * * * ?` — the `english-to-cron` translation emits a single-number step `0/10`, which Komodo's own cron parser then rejects with "Invalid step syntax... use `*/10`"). The write still succeeds and looks fine until you check `ListProcedures`' `info.schedule_error` / `next_scheduled_run` (both silently null when it fails) — this is exactly the kind of "looks configured but isn't actually running" trap worth checking after any future schedule change. Fixed by switching `schedule_format` to `"Cron"` and providing `"0 */10 * * * *"` directly. Confirmed via `ListProcedures`: `schedule_error: null`, `next_scheduled_run` computed correctly on the next :00/:10/:20... mark.
 
+> **Corrected 2026-10-03: Global Auto Update never deployed repo changes.** It only runs `PullStack` on stacks with `poll_for_updates`/`auto_update` and redeploys when a *newer image under the same tag* appears ([Komodo docs](https://komo.do/docs/resources/auto-update)). Every image here is pinned, so it never did anything useful. From session 1 until 2026-10-03, every Komodo deploy was triggered by hand, and a push to a Komodo-managed stack deployed nothing. That's why the 2026-09-25 ansible push never went out. Fixed with a second procedure, **"Deploy Changed Stacks"**: `BatchDeployStackIfChanged` with pattern `*`, Cron `0 */5 * * * *` (every 5 min, Portainer's old cadence), timezone `America/Los_Angeles`. It only deploys a stack whose compose files differ from what was last deployed. Before enabling it, every stack's `deployed_contents` matched `remote_contents`, so the first run (09:50 PDT) was a no-op. End-to-end test: commit `ff23ea2` (dropping the obsolete `version:` key from kirks-bar's dozzle-agent) was deployed by the procedure at 09:55 PDT, only that stack, and the container wasn't restarted because compose saw no service change. Global Auto Update was left as is. It's harmless for pinned tags, but `poll_for_updates`/`auto_update` were turned off on the two locally built stacks (`ansible`, `dashy`), where its `PullStack` failed every 10 minutes with "pull access denied".
+
 ## Session plan
 
 Each session: pick the next stack group below, detach it from Portainer's GitOps (or just stop the Portainer stack once Komodo's copy is confirmed healthy — exact cutover mechanics to work out at the time, likely mirroring the dual-running pattern already used for `cloudflared` and `dashy-validate-test` during the original Portainer migration), create the Komodo Stack resource pointing at the same repo path, deploy, and verify against the same bar every stack was held to during the original Portainer GitOps migration: `docker inspect` sourced from the Git clone, correct image tag, `TZ` set, volumes/mounts attached to the *existing* data (not a fresh empty one), clean logs, working traffic through Traefik.
@@ -33,7 +35,7 @@ Each session: pick the next stack group below, detach it from Portainer's GitOps
 **Sessions 1–5 (target: complete by end of 2026) — 21 stacks, ordered easiest/lowest-risk to hardest within the routine set:**
 
 1. **Stateless, no volumes, nothing host-specific to get wrong:** `it-tools`, `dozzle`, `dozzle-agent` (nelson-nuc), `dozzle-agent` (quark-vm), `homebox`, `vert`. (6 stacks — the it-tools POC already proved this exact shape works, so this session should move fast.)
-2. **Static/simple routing, still no volumes:** `unifi` (static `config.yml` upstream, unaffected either way), `wallos`, `calibre-web`, `dashy` (already a `build:` context, same mechanism Komodo needs to prove for itself here). (4 stacks)
+2. **Static/simple routing:** `unifi` (static `config.yml` upstream, unaffected either way), `wallos`, `calibre-web`, `dashy` (already a `build:` context, same mechanism Komodo needs to prove for itself here). (4 stacks.) *Correction: not volume-free. `wallos` has `wallos_wallos-db`/`wallos_wallos-logos` and `unifi` has `unifi_unifi-run`, which only reattach because the Komodo project name matches.*
 3. **Stateful — external volume names already known, no rediscovery needed** (see `CLAUDE.md` for the exact `external: true` pins already validated under Portainer): `uptime-kuma` (`uptime_kuma_uptime-kuma`), `days-since-incident` (`days-since-incident_data`), `mealie` (`mealie2_mealie-data`), `nextcloud` (4 services: app/db/redis/cron, no volume-name landmine but more moving parts). (4 stacks)
 4. **Absolute-path `env_file` secrets — Periphery mount fix already proven in the stateful PoC:** `cloudflared`, `adventurelog`, `reactive-resume`. (3 stacks)
 5. **Remaining quark-vm stacks:** `crashplan`, `paperless`. (2 stacks.) `jellyfin` was originally planned here as an in-place adoption on nelson-nuc, but is now **superseded**: it moves straight from Portainer to a new dedicated GPU host — see "Planned: dedicated GPU host for Jellyfin" below. It stays on Portainer/nelson-nuc until that host is ready.
@@ -68,6 +70,16 @@ Cutover mechanics decided and proven, reusable for every remaining session:
 3. **Same-named resources across hosts need Komodo's `project_name` override**, since Stack *resource* names must be unique per Core but the underlying Docker Compose project name does not need to change. Used this for quark-vm's `dozzle-agent` (Komodo resource named `dozzle-agent-quark-vm`, `project_name: "dozzle-agent"` set explicitly to match its existing container label) so it recreated in place exactly like its nelson-nuc counterpart.
 
 All 6 stacks (`it-tools`, `dozzle`, `dozzle-agent` ×2, `vert`, `homebox`) verified against the same bar as every stack in the original Portainer migration: `RestartCount: 0`, correct `TZ`, `deployed_hash` == `latest_hash` in Komodo, Traefik `200` on the three web-facing ones (`dozzle` restarted once deliberately to force a fresh boot log — confirmed `"clients":2`, both agents connected with no errors).
+
+## Session 2 complete (2026-10-03): unifi, wallos, calibre-web, dashy
+
+Used the corrected cutover from session 1: back up named volumes (to `~/wallos-backup/` on nelson-nuc: `wallos_wallos-db`, `wallos_wallos-logos`, `unifi_unifi-run`), create the Komodo Stack named after the existing compose project, `DELETE` the Portainer stack (ids 104, 109, 99, 105 on endpoint 2), then `DeployStack`. Results:
+- `wallos`: reattached to its original volumes (created 2026-01-19), `healthy`, `302` to login through Traefik.
+- `unifi`: the controller `uuid` from `/status` is identical before and after (`e0af0908-…`), so the `/home/nelson/unifi` data carried over. `healthy`, `302`.
+- `calibre-web`: about 90s to come back (the `universal-calibre` mod reinstalls on recreate), all three bind mounts intact, `302`.
+- `dashy`: **about 90s outage, avoidable.** `run_build` was turned on so config commits rebuild the image (a `build:` stack with `run_build: false` would redeploy the old baked-in config), but `auto_pull` was left on. Komodo then tried to pull the local `dashy:4.7.0` tag from Docker Hub and the deploy failed after Portainer had already removed the container. Fixed with `auto_pull: false` and a redeploy: `healthy`, config inside the container byte-identical to the repo, `200`. **For any `build:` stack under Komodo: `run_build: true`, `auto_pull: false`, `poll_for_updates: false`, set before the first deploy.**
+
+All four: `RestartCount: 0`, `TZ` set, compose sourced from `/etc/komodo/stacks/<stack>/…`.
 
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 
@@ -120,6 +132,8 @@ Options considered and why this one won:
 - Whether the same host should later also take over other media-adjacent stacks (`calibre-web`, etc.) — out of scope for now; nothing decided.
 
 ## Open items to resolve during the migration, not before it
+
+- **Long-term: update PRs (Renovate-style).** Goal: when a new image version is published, a PR bumping the pinned tag opens in this repo to review, edit, merge or reject, and the merge deploys through "Deploy Changed Stacks". Opening PRs doesn't need inbound webhooks: Renovate (GitHub App or self-hosted on a schedule) polls registries itself. A webhook from GitHub to Komodo only shortens the up-to-5-min gap after a merge, and would need the cloudflared tunnel route noted in Phase 4 of `CLAUDE.md`. That part is optional.
 
 - Final Portainer decommission steps (removing the Portainer container/agent themselves, not just detaching stacks) — deferred to the very end, no need to plan in detail yet.
 - The stale `com.docker.compose.project.config_files` label left behind on a no-op cutover (still points at Portainer's old clone path until the next real recreate) — cosmetic only, same behavior already seen on the home-assistant stack-115 reconnect, not worth chasing.
