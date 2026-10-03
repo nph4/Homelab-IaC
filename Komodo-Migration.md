@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 2 complete (2026-10-03), 10 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 3 complete (2026-10-03), 14 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -80,6 +80,22 @@ Used the corrected cutover from session 1: back up named volumes (to `~/wallos-b
 - `dashy`: **about 90s outage, avoidable.** `run_build` was turned on so config commits rebuild the image (a `build:` stack with `run_build: false` would redeploy the old baked-in config), but `auto_pull` was left on. Komodo then tried to pull the local `dashy:4.7.0` tag from Docker Hub and the deploy failed after Portainer had already removed the container. Fixed with `auto_pull: false` and a redeploy: `healthy`, config inside the container byte-identical to the repo, `200`. **For any `build:` stack under Komodo: `run_build: true`, `auto_pull: false`, `poll_for_updates: false`, set before the first deploy.**
 
 All four: `RestartCount: 0`, `TZ` set, compose sourced from `/etc/komodo/stacks/<stack>/…`.
+
+## Session 3 complete (2026-10-03): days-since-incident, uptime-kuma, mealie, nextcloud
+
+Same cutover as session 2, with two changes:
+- **SQLite stacks were backed up cold.** For `uptime-kuma` and `mealie`, the volume tar ran *after* the Portainer delete and before the Komodo deploy, so the database files weren't being written (about 20s of extra downtime each). Nextcloud was backed up live instead: `pg_dump -Fc` (consistent while running, 172 tables) plus a tar of `nextcloud_nextcloud-data` (about 2.5 min for 2.6 GB). All backups are in `~/komodo-s3-backup/` on nelson-nuc (about 1.7 GB; delete once these stacks have run cleanly for a while).
+- **Nextcloud's DB secret moved** from `/home/nelson/stacks/nextcloud/` to `/home/nelson/containers/nextcloud/nextcloud_db_password.txt` (commit `9469ff3`). Periphery only mounts `/home/nelson/containers`, so the old path would have failed the deploy after Portainer had already removed the containers. **Before any cutover, check every `env_file:`/`secrets: file:` path in the compose file is under `/home/nelson/containers`.** The old copy is still in `/home/nelson/stacks/nextcloud/` as a rollback.
+
+Results, all `RestartCount: 0`, `TZ` set, compose from `/etc/komodo/stacks/<stack>/…`:
+- `days-since-incident` (Portainer project was `days-since-last-incident`, now `days-since-incident`; the volume is pinned `external`, so the name change didn't matter): built with `run_build: true`/`auto_pull: false`, page still shows "Last incident: August 16, 2026", `200`.
+- `uptime-kuma`: `kuma.db` byte-identical in size (352,768,000), `healthy`, `302` to `/dashboard`.
+- `mealie`: still on `mealie2_mealie-data`, 173 recipe dirs before and after, `env_file` loaded, `200` on the LAN and via Cloudflare (`mealie.nelsonhickman.com`).
+- `nextcloud` (4 containers): same `instanceid` (`octl9o8so0jv`), same 2 users, 31.0.14, no DB upgrade needed, `302` to login via Cloudflare and on the LAN.
+
+Also confirmed: the "Deploy Changed Stacks" procedure does **not** deploy a stack that was created but never deployed. It ran at 10:00 PDT while three new stacks sat undeployed and touched nothing. So creating the Komodo stack ahead of the Portainer delete is safe.
+
+Remaining on Portainer: `cloudflared`, `adventurelog`, `reactive-resume` (session 4), `crashplan`, `paperless` on quark-vm (session 5), and the held-back `traefik` and `home-assistant`.
 
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 

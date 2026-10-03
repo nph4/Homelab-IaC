@@ -24,6 +24,8 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **Session 2 complete (2026-10-03): 10 of 21** (`unifi`, `wallos`, `calibre-web`, `dashy`), all healthy with their existing data reattached.
 
+**Session 3 complete (2026-10-03): 14 of 21** (`days-since-incident`, `uptime-kuma`, `mealie`, `nextcloud`), all with their existing data confirmed intact.
+
 ## Layout
 
 ```

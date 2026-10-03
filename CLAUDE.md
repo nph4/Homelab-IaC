@@ -227,3 +227,9 @@ Session 2 (`unifi`, `wallos`, `calibre-web`, `dashy`) is done; details in `Komod
 **Correction to the PoC and timeline notes above:** Komodo's "Global Auto Update" doesn't deploy repo changes. It only pulls newer images under the *same* tag, which never happens with this repo's pinned tags. So from session 1 until today, no push to a Komodo-managed stack deployed by itself. Every deploy was manual, including the 2026-09-25 ansible push. Fixed with a new procedure, "Deploy Changed Stacks" (`BatchDeployStackIfChanged`, pattern `*`, every 5 min), confirmed end to end with commit `ff23ea2` at 09:55 PDT. Image polling is now off on the locally built `ansible` and `dashy` stacks, which were throwing "pull access denied" every 10 minutes.
 
 **Long-term goal (user, 2026-10-03):** Renovate-style PRs for new image versions, reviewed and merged by hand, deployed by the procedure above. That doesn't need webhooks: the PR side polls registries, and a GitHub→Komodo webhook would only make post-merge deploys instant.
+
+## Komodo session 3 (2026-10-03)
+
+`days-since-incident`, `uptime-kuma`, `mealie` and `nextcloud` are on Komodo, all with data confirmed intact; details in `Komodo-Migration.md`. Two things worth carrying forward:
+- **Periphery can only read secrets and env files under `/home/nelson/containers`.** Nextcloud's DB secret lived in the legacy `/home/nelson/stacks/nextcloud/`, which would have failed the Komodo deploy after Portainer had already torn the stack down. It was moved (commit `9469ff3`). Check every `env_file:`/`secrets: file:` path before each remaining cutover. `cloudflared`, `adventurelog` and `reactive-resume` are next, and all three use `env_file`.
+- **Back up SQLite volumes cold** (after the Portainer delete, before the Komodo deploy), and Postgres with a live `pg_dump`. Backups from this session are in `~/komodo-s3-backup/` on nelson-nuc.
