@@ -97,6 +97,8 @@ Also confirmed: the "Deploy Changed Stacks" procedure does **not** deploy a stac
 
 Remaining on Portainer: `cloudflared`, `adventurelog`, `reactive-resume` (session 4), `crashplan`, `paperless` on quark-vm (session 5), and the held-back `traefik` and `home-assistant`.
 
+**Pre-checked for sessions 4–5:** the `env_file` paths for `cloudflared`, `adventurelog` and `reactive-resume` are all under `/home/nelson/containers`, so they're fine. **`paperless` (session 5) is blocked as is:** its secrets are at `/opt/stacks/paperless-ngx/secrets/{pg_password,paperless_secret_key}` on quark-vm, and quark-vm's Periphery mounts only its own root (`/home/quark/containers/komodo-periphery/root`). Either add a read-only `/opt/stacks/paperless-ngx/secrets` mount to that Periphery's compose file, or move the secrets under a mounted path and update the repo, before cutting it over. Those files aren't readable by `quark` without sudo, so the user needs to do this part.
+
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 
 **Status 2026-09-29: Jellyfin runs on kirks-bar, is managed by Komodo (Stack `jellyfin`, server `kirks-bar`) and is served through Traefik. The old nelson-nuc Portainer stack (ID 107) was deleted on 2026-09-29 at 22:56 UTC, which also removed its container. Nothing Jellyfin-related is left on nelson-nuc.** What was actually done, against the plan below:
