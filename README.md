@@ -26,6 +26,8 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **Session 3 complete (2026-10-03): 14 of 21** (`days-since-incident`, `uptime-kuma`, `mealie`, `nextcloud`), all with their existing data confirmed intact.
 
+**Session 4 complete (2026-10-03): 17 of 21** (`cloudflared`, `adventurelog`, `reactive-resume`). Every routine nelson-nuc stack is now on Komodo; Portainer there manages only `traefik` and `home-assistant`.
+
 ## Layout
 
 ```

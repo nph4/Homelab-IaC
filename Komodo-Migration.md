@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 3 complete (2026-10-03), 14 of 21 routine stacks migrated.** This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 4 complete (2026-10-03), 17 of 21 routine stacks migrated.** All of nelson-nuc's routine stacks are done. Left: session 5 on quark-vm (`crashplan`, `paperless`), then the held-back `traefik` and `home-assistant`. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -98,6 +98,18 @@ Also confirmed: the "Deploy Changed Stacks" procedure does **not** deploy a stac
 Remaining on Portainer: `cloudflared`, `adventurelog`, `reactive-resume` (session 4), `crashplan`, `paperless` on quark-vm (session 5), and the held-back `traefik` and `home-assistant`.
 
 **Pre-checked for sessions 4–5:** the `env_file` paths for `cloudflared`, `adventurelog` and `reactive-resume` are all under `/home/nelson/containers`, so they're fine. **`paperless` (session 5) is blocked as is:** its secrets are at `/opt/stacks/paperless-ngx/secrets/{pg_password,paperless_secret_key}` on quark-vm, and quark-vm's Periphery mounts only its own root (`/home/quark/containers/komodo-periphery/root`). Either add a read-only `/opt/stacks/paperless-ngx/secrets` mount to that Periphery's compose file, or move the secrets under a mounted path and update the repo, before cutting it over. Those files aren't readable by `quark` without sudo, so the user needs to do this part.
+
+## Session 4 complete (2026-10-03): cloudflared, adventurelog, reactive-resume
+
+Done remotely, over Tailscale. That's safe for cloudflared: its tunnel carries only the three public hostnames (`mealie`, `nextcloud`, `adventurelog` `.nelsonhickman.com`), and SSH, Komodo, Portainer and every `*.local` name reach nelson-nuc over Tailscale, not the tunnel. Only `traefik`, Pi-hole, Tailscale itself or nelson-nuc's network config need to be done from the LAN.
+
+Backups in `~/komodo-s3-backup/`: live `pg_dump -Fc` of `adventurelog-db` (56 tables) and `reactive-resume-postgres` (15), plus a tar of `adventurelog_adventurelog-media`. adventurelog and reactive-resume use **unpinned** named volumes (`adventurelog_adventurelog-db`/`-media`, `reactive-resume_postgres_data`/`_app_data`). They only reattached because the Komodo stack names match the live compose project names, which was checked before creating the stacks.
+
+- `cloudflared` (Portainer stack `cloudflared-git`, project now `cloudflared`): public sites down about **5s**, 4 tunnel connections registered, no `ERR` lines, all three public hostnames answer.
+- `adventurelog`: both containers `healthy`, still on the original volumes, same accounts (`admin`/`nelson` superusers, `emily`), 13 locations before and after, `DISABLE_REGISTRATION=true` still loaded from the `env_file`, `200` via Cloudflare.
+- `reactive-resume` (3 containers): row counts in all 14 tables match the pre-cutover dump (restored into a throwaway DB for the comparison, then dropped), original volume from 2025-12-23, `200` on the LAN.
+
+Portainer's nelson-nuc environment now holds only `traefik-git` and `home-assistant`.
 
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 
