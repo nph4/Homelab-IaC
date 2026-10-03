@@ -30,7 +30,9 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **Session 5 complete (2026-10-03): 19 of 21** (`crashplan`, `paperless` on quark-vm). Every routine stack is on Komodo.
 
-**`home-assistant` migrated early (2026-10-03): 20 of 21.** Only `traefik` remains on Portainer, held for the Jan–Apr 2027 buffer.
+**`home-assistant` migrated early (2026-10-03): 20 of 21.**
+
+**`traefik` migrated (2026-10-03): all 21 stacks are on Komodo.** Portainer manages nothing. Decommissioning the Portainer server itself is the last step.
 
 ## Layout
 

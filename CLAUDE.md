@@ -261,3 +261,9 @@ At about 12:23 PDT the NAS (TrueNAS Core, `192.168.88.68`) disappeared from the 
 ## home-assistant on Komodo (2026-10-03)
 
 Moved early from the 2027 buffer at the user's request; details in `Komodo-Migration.md`. The before/after snapshot (config entries, devices, ZHA devices, entities, recorder schema) was identical, downtime was about 25s, and Zigbee is talking. Portainer's nelson-nuc environment now holds only `traefik-git`. The "Remaining work to close out the Home Assistant migration" items above (frontend cache refresh, native backups, re-auths) are Home Assistant housekeeping, unaffected by the deploy tool. The compose file's old `/dev/serial/by-id` device mapping was a no-op, leaving ZHA dependent on the dongle staying `/dev/ttyACM0`. Fixed the same day: the dongle is mapped by its by-id symlink to `/dev/zigbee` and ZHA points there (details in `Komodo-Migration.md`).
+
+## traefik on Komodo; every stack migrated; Docker Hub rate limit (2026-10-03)
+
+`traefik` was cut over from the LAN with about 23s of downtime; every site, the dashboard auth and the public hostnames are unchanged, `acme.json` is untouched, and the version is unchanged (3.0.4). Details and the reverse-proxy-specific precautions are in `Komodo-Migration.md`. **All 21 stacks are on Komodo, and Portainer manages none.** What's left is decommissioning the Portainer server container itself. Its DB still has inert orphan records from the old environment 3.
+
+**Komodo's 10-minute Global Auto Update was exhausting Docker Hub's anonymous limit for the whole home IP** (100/hour; 19 polled Docker Hub images × 6 runs/hour ≈ 114). Found when even a manifest `HEAD` got `429`. That schedule was tightened by me during the 9/19 prep, and it was useless anyway with pinned tags. Now daily at 03:00 Pacific. If a pull fails with `toomanyrequests`, check this first. The `traefik:v3.0` tag still needs pinning to `v3.0.4` (verify the digest first) once the limit resets.
