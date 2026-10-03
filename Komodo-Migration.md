@@ -94,7 +94,7 @@ Results, all `RestartCount: 0`, `TZ` set, compose from `/etc/komodo/stacks/<stac
 - `mealie`: still on `mealie2_mealie-data`, 173 recipe dirs before and after, `env_file` loaded, `200` on the LAN and via Cloudflare (`mealie.nelsonhickman.com`).
 - `nextcloud` (4 containers): same `instanceid` (`octl9o8so0jv`), same 2 users, 31.0.14, no DB upgrade needed, `302` to login via Cloudflare and on the LAN.
 
-Also confirmed: the "Deploy Changed Stacks" procedure does **not** deploy a stack that was created but never deployed. It ran at 10:00 PDT while three new stacks sat undeployed and touched nothing. So creating the Komodo stack ahead of the Portainer delete is safe.
+~~Also confirmed: the "Deploy Changed Stacks" procedure does **not** deploy a stack that was created but never deployed.~~ **Wrong, corrected later the same day:** at 14:50:00 the procedure *did* try to deploy the just-created, never-deployed `traefik` stack, 15s before the manual cutover. It failed safely only because compose refused the fixed `container_name: traefik` while Portainer's container still held it. (Why it skipped the three new stacks at 10:00 is unclear.) Creating the Komodo stack ahead of the Portainer delete is safe **because every compose file sets `container_name`**, not because the procedure ignores new stacks.
 
 Remaining on Portainer: `cloudflared`, `adventurelog`, `reactive-resume` (session 4), `crashplan`, `paperless` on quark-vm (session 5), and the held-back `traefik` and `home-assistant`.
 
@@ -141,6 +141,10 @@ Done from the LAN, at 14:50 PDT. Precautions specific to the reverse proxy:
 Downtime was about 23s (14:50:15–14:50:38). Verified: a sweep of 17 `*.local` sites, the dashboard's unauthenticated `401` and the 3 public hostnames, identical before and after. Traefik 3.0.4 with an unchanged image ID, `acme.json` checksum unchanged, both secrets mounted, 0 error lines, compose from Komodo's clone. `traefik.yml`/`config.yml`/`acme.json` are still host bind mounts from `/home/nelson/containers/traefik/data/`; the host-sync gotcha in CLAUDE.md still applies. **To do:** the repo pins `traefik:v3.0` (a floating minor tag). Pin `v3.0.4` once the Docker Hub limit has reset, after checking its digest matches the running image.
 
 **Docker Hub rate limit, caused by the Global Auto Update schedule.** A `docker pull` on nelson-nuc failed with `toomanyrequests`, and even manifest `HEAD` requests got `429` with `x-ratelimit-remaining: 0`. The anonymous limit is 100 per hour, shared by everything behind the home IP. Global Auto Update ran every 10 minutes and checked 19 Docker Hub images each time, about 114 requests an hour, with no benefit since every tag is pinned. Set back to Komodo's default, **daily at 03:00** (`0 0 3 * * *`, `America/Los_Angeles`). That's about 19 requests a day, and repo-change deploys are unaffected ("Deploy Changed Stacks" only reads GitHub). Lesson: with pinned tags, image polling is pure cost. A future Renovate setup would replace it.
+
+## build: stacks need `config_files` for repo changes to deploy (2026-10-03)
+
+"Deploy Changed Stacks" compares only the compose file by default. A commit that changed only dashy's `my-config.yml` (removing the Portainer tile, commit `c1ab287`) went undeployed for over 7 minutes. Fix: Komodo's per-stack `config_files` (set via `UpdateStack` as a list of paths, stored as `[{"path": …}]`) adds files to the change check. Set on all three `build:` stacks: `dashy` (`my-config.yml`, `Dockerfile`), `days-since-incident` (`Dockerfile`, `app.py`, `templates/index.html`), `ansible` (`Dockerfile`). The next run (15:05 PDT) redeployed all three: dashy rebuilt without the Portainer link, and the other two were no-op recreates (unchanged `StartedAt`). **When adding a file to a `build:` context, add it to that stack's `config_files` too.**
 
 ## Portainer decommissioned (2026-10-03)
 
