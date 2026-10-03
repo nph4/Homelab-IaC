@@ -22,17 +22,6 @@ http:
         certResolver: cloudflare
       service: crashplan
 
-    portainer:
-      entryPoints:
-        - https
-      rule: "Host(`portainer.local.nelsonhickman.com`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls:
-        certResolver: cloudflare
-      service: portainer
-
     # --- added from CSV ---
     unifi:
       entryPoints:
@@ -101,12 +90,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://100.76.105.3:5800/"
-        passHostHeader: true
-
-    portainer:
-      loadBalancer:
-        servers:
-          - url: "https://192.168.88.101:9443"
         passHostHeader: true
 
     # --- added from CSV ---

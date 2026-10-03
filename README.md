@@ -1,8 +1,8 @@
 # Homelab-IaC
 
-Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed via GitOps rather than by hand through a web UI — historically all by [Portainer](https://www.portainer.io/), now being migrated stack-by-stack to [Komodo](https://github.com/moghtech/komodo) (see below). Whichever tool owns a given stack, it pulls the compose file directly from this repo and polls it to redeploy on new commits. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
+Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose stack, deployed and managed via GitOps rather than by hand through a web UI — by [Komodo](https://github.com/moghtech/komodo) (until 2026-10-03, by [Portainer](https://www.portainer.io/); see below). Komodo pulls each compose file directly from this repo and redeploys a stack within 5 minutes of a commit that changes it. There's no build system, CI pipeline, or test suite; a compose file in this repo *is* the deployment.
 
-## ⚠️ Migrating off Portainer to Komodo (in progress)
+## Migrated off Portainer to Komodo (complete 2026-10-03)
 
 Portainer 3.0 drops the standalone Community Edition build. 2.x keeps getting security patches, but no new features; the only forward path (3.x) gates multi-host and GitOps behind a capped "3 Nodes Free" tier of the Business Edition, not a FLOSS release. Since a free/libre offering is a hard requirement here, this repo needs to move off Portainer before 2.x support ends.
 
@@ -32,7 +32,9 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 
 **`home-assistant` migrated early (2026-10-03): 20 of 21.**
 
-**`traefik` migrated (2026-10-03): all 21 stacks are on Komodo.** Portainer manages nothing. Decommissioning the Portainer server itself is the last step.
+**`traefik` migrated (2026-10-03): all 21 stacks are on Komodo.**
+
+**Portainer decommissioned (2026-10-03).** The server container and image on nelson-nuc are removed, as are its Traefik route and dashy tile. Its data volume is kept, with a tar backup in `~/portainer-backup/`. The quark-vm agent was removed earlier the same day.
 
 ## Layout
 
@@ -43,23 +45,22 @@ stacks/
   kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
 ```
 
-Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Mid-migration, a given stack is managed by either Portainer or Komodo depending on whether it's been cut over yet (see [`Komodo-Migration.md`](Komodo-Migration.md) for the current per-stack status) — the compose file itself and this repo's conventions don't change either way.
+Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Every stack is deployed by Komodo; see [`Komodo-Migration.md`](Komodo-Migration.md) for how each was cut over.
 
 ## What runs manually
 
 A few things are always bootstrapped by hand, not by GitOps, since they're prerequisites for GitOps itself:
-- **Portainer** — must already exist before it can manage anything. Being phased out (see the migration section above), but still manages every stack not yet cut over to Komodo.
-- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside both this repo and Portainer. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand. Core's port is bound to nelson-nuc's LAN IP (`192.168.88.101:9120`), and that's the address the remote agents dial. It isn't bound to the Tailscale IP, because Docker would start Core before `tailscale0` came up at boot and the bind would fail.
+- **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside this repo, since it's what deploys the repo. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand. Core's port is bound to nelson-nuc's LAN IP (`192.168.88.101:9120`), and that's the address the remote agents dial. It isn't bound to the Tailscale IP, because Docker would start Core before `tailscale0` came up at boot and the bind would fail.
 - **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`). Not needed on kirks-bar, which has no Traefik of its own: its stacks publish ports and get static routes in `traefik/config.yml`.
 - **The NVIDIA driver and container toolkit on kirks-bar** — installed by the ansible repo's `nvidia.yml` (driver branch `580-server`, the last with Pascal support). Kernel and driver updates are kept out of unattended-upgrades and applied by its `updates.yml`, which reboots.
 
 ## Architecture
 
-- **GitOps tooling (mid-migration):** stacks are being cut over one at a time from Portainer to [Komodo](https://github.com/moghtech/komodo) — see the migration section above and [`Komodo-Migration.md`](Komodo-Migration.md) for exactly which stacks have moved so far (6 of 21 routine stacks as of session 1; `traefik` and `home-assistant` deliberately held back until Q1 2027). Which tool owns a stack doesn't change anything else described in this section — same compose file, same conventions, only the poller/redeployer differs.
-- **Reverse proxy:** [Traefik v3](stacks/nelson-nuc/traefik) fronts everything. Dockerized services route in via labels; non-Docker upstreams (Proxmox, Portainer, the router, the NAS, UniFi, and the quark-vm-hosted services) are registered as static routes in `traefik/config.yml` instead. The shared external Docker network is named `proxy` — every container that needs Traefik routing must join it.
+- **GitOps tooling:** [Komodo](https://github.com/moghtech/komodo). A Core-wide procedure, "Deploy Changed Stacks", runs every 5 minutes and redeploys only stacks whose compose files changed in this repo. Image polling ("Global Auto Update") runs once a day, since every tag is pinned. Locally built stacks (`build:`) need `run_build: true` and `auto_pull: false`.
+- **Reverse proxy:** [Traefik v3](stacks/nelson-nuc/traefik) fronts everything. Dockerized services route in via labels; non-Docker upstreams (Proxmox, the router, the NAS, UniFi, and the quark-vm-hosted services) are registered as static routes in `traefik/config.yml` instead. The shared external Docker network is named `proxy` — every container that needs Traefik routing must join it.
 - **Tailscale:** nelson-nuc advertises the LAN (`192.168.88.0/24`) as a subnet route. Servers on that LAN (anything that receives LAN connections: kirks-bar, quark-vm, etc.) must run with `tailscale set --accept-routes=false`: accepting the route sends their replies to LAN connections out `tailscale0` instead of the NIC, so SSH, Ansible, and anything else reaching them by LAN address times out (hit on kirks-bar, 2026-09-26). Roaming clients are the opposite. The laptop (framework) keeps `--accept-routes=true` so the LAN works remotely, and a NetworkManager hook in [laptop-dotfiles](https://github.com/nph4/laptop-dotfiles) (`etc/NetworkManager/dispatcher.d/50-home-lan-local`) adds a higher-priority `ip rule` at home so LAN traffic stays local instead of going through Tailscale. The tailnet's split DNS sends `local.nelsonhickman.com` to Pi-hole's LAN IP `192.168.88.34`, so a client without the route can't resolve those names off the LAN.
 - **TLS:** wildcard certs via Cloudflare DNS challenge (cert resolver `cloudflare`). Internal-only services live under `*.local.nelsonhickman.com`; anything internet-facing is under `*.nelsonhickman.com`.
-- **Secrets:** two patterns, both always an absolute host path (never relative — Portainer deploys from a plain Git clone with no fixed working directory):
+- **Secrets:** two patterns, both always an absolute host path (never relative: the deploy tool runs compose from its own Git clone, and anything outside the clone must be visible to Komodo's Periphery agent, under `/home/nelson/containers` on nelson-nuc):
   - Docker `secrets:` block pointing at a file on the host, e.g. `/home/nelson/containers/traefik/cf_api_token.txt` (used by traefik, nextcloud)
   - `env_file:` pointing at a file on the host, e.g. `/home/nelson/containers/mealie/.env` (used when the upstream image expects env vars)
 - **Image versions:** pinned to explicit versions everywhere, e.g. `traefik:v3.0`, `postgres:16`, `nextcloud:31-apache`. `ghcr.io/vert-sh/vert` intentionally stays on `latest` because it publishes no versioned tags. Stacks built from a local `Dockerfile` (`build: .`) pin their base image and packages there instead, and tag the image with the version, e.g. `ansible-control:14.4.0` (the `ansible` package version). Under Komodo they also need `pull_policy: build`, since Komodo runs `docker compose pull` first and would fail trying to pull the local tag from Docker Hub.

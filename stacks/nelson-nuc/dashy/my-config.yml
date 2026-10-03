@@ -11,13 +11,6 @@ sections:
 - name: Docker
   icon: hl-docker
   items:
-  - title: Portainer
-    description: Docker container management
-    icon: hl-portainer
-    url: https://portainer.local.nelsonhickman.com/
-    target: newtab
-    statusCheck: true
-    id: 0_600_portainer
   - title: Dozzle
     description: Log management for docker containers
     icon: hl-dozzle
