@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 4 complete (2026-10-03), 17 of 21 routine stacks migrated.** All of nelson-nuc's routine stacks are done. Left: session 5 on quark-vm (`crashplan`, `paperless`), then the held-back `traefik` and `home-assistant`. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 5 complete (2026-10-03), 19 of 21 stacks migrated: every routine stack.** Left: the held-back `traefik` and `home-assistant` (Jan–Apr 2027 buffer), then `portainer-agent` and the Portainer decommission. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -110,6 +110,16 @@ Backups in `~/komodo-s3-backup/`: live `pg_dump -Fc` of `adventurelog-db` (56 ta
 - `reactive-resume` (3 containers): row counts in all 14 tables match the pre-cutover dump (restored into a throwaway DB for the comparison, then dropped), original volume from 2025-12-23, `200` on the LAN.
 
 Portainer's nelson-nuc environment now holds only `traefik-git` and `home-assistant`.
+
+## Session 5 complete (2026-10-03): crashplan, paperless (quark-vm)
+
+**Prep, host-side on quark-vm:** quark-vm's Periphery couldn't see paperless's Docker secrets in `/opt/stacks/paperless-ngx/secrets/` (root-only, `0700`). Added a read-only bind of that directory, at the same path, to `/home/quark/containers/komodo-periphery/compose.yml` (backup `compose.yml.bak-*-pre-paperless-secrets`) and recreated Periphery. No sudo was needed: the compose file is `quark`'s, and Periphery runs as root in its container. This adds no new exposure, since Periphery already has the Docker socket. quark-vm isn't in the ansible repo's `komodo_periphery` group, so no playbook will overwrite it.
+
+Backup: live `pg_dump -Fc` of `paperless-postgres` (72 tables) in `~/komodo-s5-backup/` on quark-vm. Both stacks use bind mounts only, so there was no volume-name risk. Portainer stacks `113`/`114` on endpoint 4 were deleted; the endpoint-3 records `33`/`39` are old orphans, left alone.
+- `crashplan`: running from Komodo's clone, `TZ` set, `200`. **But see the NAS note below.**
+- `paperless` (3 containers): `healthy`, both secrets mounted, 215 documents before and after, `302` to login.
+
+**Found during this session: quark-vm's NAS mount has been down since the 2026-10-02 power loss.** quark-vm booted at 11:42 PDT, before the NAS (`192.168.88.68`) was reachable, so the `/etc/fstab` CIFS mount at `/mnt/nas` failed (`mount error(113): could not connect`), and systemd doesn't retry. CrashPlan's `/storage` has been an empty directory since then, already before the cutover. Fixing it needs sudo on quark-vm. See CLAUDE.md for the commands and the longer-term fstab fix.
 
 ## Dedicated GPU host for Jellyfin (decided 2026-09-21, cut over 2026-09-29)
 
