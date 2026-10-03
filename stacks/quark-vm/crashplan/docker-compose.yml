@@ -30,7 +30,8 @@ services:
       - "VNC_LISTENING_PORT=5900"
       - "VNC_PASSWORD="
       - "ENABLE_CJK_FONT=0"
-      - "CRASHPLAN_SRV_MAX_MEM=1024M"
+      # ~1GB per TB (or per million files) backed up: the /storage selection is 5.2TB / ~506k files
+      - "CRASHPLAN_SRV_MAX_MEM=6144M"
       - "CRASHPLAN_SERVER_ADDRESS=SMB"
 
     hostname: "crashplan"
