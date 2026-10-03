@@ -11,7 +11,7 @@ services:
     # IMPORTANT: no docker.sock mount needed when using agents
     environment:
       TZ: America/Los_Angeles
-      DOZZLE_REMOTE_AGENT: 100.76.105.3:7007, 100.69.15.50:7007
+      DOZZLE_REMOTE_AGENT: 100.76.105.3:7007, 100.69.15.50:7007, 100.110.243.115:7007
 
     labels:
       - "traefik.enable=true"

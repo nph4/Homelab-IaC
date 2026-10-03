@@ -28,7 +28,7 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
   quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent, portainer-agent
-  kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23), GPU host — jellyfin
+  kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
 ```
 
 Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Mid-migration, a given stack is managed by either Portainer or Komodo depending on whether it's been cut over yet (see [`Komodo-Migration.md`](Komodo-Migration.md) for the current per-stack status) — the compose file itself and this repo's conventions don't change either way.
@@ -94,6 +94,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | Stack | What it is |
 |---|---|
 | `jellyfin` | Media server, NVENC transcoding on the Quadro P1000. Routed by a static entry in `traefik/config.yml`, since Traefik can't read Docker labels on another host |
+| `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` (Komodo-only, never on Portainer) |
 
 ## Adding a service
 
