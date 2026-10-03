@@ -60,7 +60,9 @@ services:
 
     volumes:
       - "/docker/appdata/crashplan-pro:/config"
-      - "/mnt/nas:/storage:ro"
+      # rslave: if /mnt/nas gets mounted after this container starts (e.g. the NAS boots
+      # later than quark-vm), the mount still shows up at /storage without a restart
+      - "/mnt/nas:/storage:ro,rslave"
 
     working_dir: "/tmp"
 
