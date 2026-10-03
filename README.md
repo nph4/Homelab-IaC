@@ -35,7 +35,7 @@ One thing to weigh before committing to a real migration: **auto-redeploy cadenc
 ```
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
-  quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent, portainer-agent
+  quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent
   kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
 ```
 
@@ -48,7 +48,6 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 - **Komodo Core, its Mongo database, and the Periphery agent on each host** — deployed at `/home/nelson/containers/komodo/` on nelson-nuc, deliberately kept outside both this repo and Portainer. This is the replacement for Portainer, itself bootstrapped and run by hand the same way Portainer is; Periphery is what actually executes `docker compose` on each host on Komodo's behalf. kirks-bar (192.168.88.23, Ubuntu 26.04) runs a standalone Periphery as `kirk`, deployed by the [ansible repo](https://github.com/nph4/homelab-ansible)'s `komodo-periphery.yml` rather than by hand. Core's port is bound to nelson-nuc's LAN IP (`192.168.88.101:9120`), and that's the address the remote agents dial. It isn't bound to the Tailscale IP, because Docker would start Core before `tailscale0` came up at boot and the bind would fail.
 - **The `proxy` Docker network** — must be created on each host before any stack deploys (`docker network create proxy`). Not needed on kirks-bar, which has no Traefik of its own: its stacks publish ports and get static routes in `traefik/config.yml`.
 - **The NVIDIA driver and container toolkit on kirks-bar** — installed by the ansible repo's `nvidia.yml` (driver branch `580-server`, the last with Pascal support). Kernel and driver updates are kept out of unattended-upgrades and applied by its `updates.yml`, which reboots.
-- **The Portainer Agent on quark-vm** ([`stacks/quark-vm/portainer-agent`](stacks/quark-vm/portainer-agent)) — the pipe Portainer uses to reach that host. Its compose file is committed for version tracking, but it's applied on the host by hand rather than via GitOps, since redeploying it restarts the agent Portainer is mid-deploy through.
 
 ## Architecture
 
@@ -95,7 +94,6 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | `paperless` | Document management ([paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)) |
 | `crashplan` | CrashPlan backup client |
 | `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
-| `portainer-agent` | Portainer connectivity agent for this host (version tracks the Portainer server's LTS) |
 
 **kirks-bar**
 

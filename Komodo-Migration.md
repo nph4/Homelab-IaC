@@ -1,6 +1,6 @@
 # Komodo Migration Plan
 
-Status: **session 5 complete (2026-10-03), 19 of 21 stacks migrated: every routine stack.** Left: the held-back `traefik` and `home-assistant` (Jan–Apr 2027 buffer), then `portainer-agent` and the Portainer decommission. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
+Status: **session 5 complete (2026-10-03), 19 of 21 stacks migrated: every routine stack.** Left: the held-back `traefik` and `home-assistant` (Jan–Apr 2027 buffer), then the Portainer decommission. quark-vm is fully off Portainer: its agent and environment were removed on 2026-10-03. This is the actual migration off Portainer, distinct from the completed proof-of-concept — see [`Komodo-PoC.md`](Komodo-PoC.md) for what was validated (both hard patterns, GUI usability, no paid tier) before this plan was written. See the README's "Migrating off Portainer" section for the high-level why.
 
 ## Warm-up: the `ansible` stack (2026-09-19, before session 1)
 
@@ -45,7 +45,8 @@ That's 20 of the 21 routine stacks explicitly grouped above (`komodo` itself and
 **Held back for the Jan–Apr 2027 buffer, deliberately not rushed into the EOY push:**
 - **`traefik`** — reverse proxy for every other service in the repo; a bad cutover here has the highest blast radius of anything in this migration. Also already has its own known gotcha (`traefik.yml`/`config.yml` bind-mounted from the host, not Git-sourced — see `CLAUDE.md`) that deserves a careful pass, not a rushed one.
 - **`home-assistant`** — completed a multi-month staged version upgrade only weeks ago (2026-08-31 to 2026-09-08) and was *just* reconnected to Portainer GitOps (2026-09-08). Let it sit stable before touching its deploy mechanism again.
-- **`portainer-agent`** (quark-vm) and the **final Portainer decommission** — structurally last regardless of pace, since nothing can be safely detached from Portainer's management until every stack it might still reach has already moved.
+- ~~**`portainer-agent`** (quark-vm)~~ **Removed 2026-10-03**, once crashplan and paperless were on Komodo: Portainer environment 4 (`quarks`) deleted via `DELETE /api/endpoints/4`, then the `portainer_agent` container and its `portainer/agent:2.45.0` image removed on the host. Nothing listens on 9001 anymore. The repo's `stacks/quark-vm/portainer-agent/` was deleted.
+- The **final Portainer decommission** (nelson-nuc) stays last, after `traefik` and `home-assistant`. Its database still has orphan stack records for a long-gone environment 3 (`watchtower-quark`, `crashplan-pro`, `paperless-ngx`, `it-tools`, etc.), with no Git link and no polling, so they're inert. They go away with Portainer itself.
 
 ## Rollback posture per stack
 
