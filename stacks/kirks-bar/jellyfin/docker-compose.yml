@@ -28,9 +28,9 @@ services:
 
     volumes:
       - /home/kirk/containers/jellyfin/config:/config
-      - /mnt/nas/media/video/Movies:/data/Movies:rslave
-      - /mnt/nas/media/video/TV:/data/TV:rslave
-      - /mnt/nas/media/Books:/data/Books:rslave
+      - /mnt/nas/media/video/Movies:/data/Movies
+      - /mnt/nas/media/video/TV:/data/TV
+      - /mnt/nas/media/Books:/data/Books
       # Transcode scratch space in RAM; Jellyfin's transcode path is set to /transcode
       - type: tmpfs
         target: /transcode
