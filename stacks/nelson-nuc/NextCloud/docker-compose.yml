@@ -16,6 +16,9 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/nextcloud_db_password
     secrets:
       - nextcloud_db_password
+    labels:
+      # Nightly pg_dumpall to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.postgres=true"
 
   nextcloud-redis:
     image: redis:7-alpine

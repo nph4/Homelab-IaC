@@ -31,6 +31,9 @@ services:
       # Service
       - "traefik.http.services.homebox.loadbalancer.server.port=7745"
 
+      # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/data/homebox.db"
+
 volumes:
   homebox-data:
     driver: local

@@ -29,6 +29,9 @@ services:
 
       - "traefik.http.services.wallos.loadbalancer.server.port=80"
 
+      # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/var/www/html/db/wallos.db"
+
 networks:
   proxy:
     external: true

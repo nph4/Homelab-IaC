@@ -21,6 +21,9 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
     secrets:
       - pg_password
+    labels:
+      # Nightly pg_dumpall to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.postgres=true"
     volumes:
       - /srv/paperless/pgdata:/var/lib/postgresql/data
 

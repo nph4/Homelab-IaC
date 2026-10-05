@@ -23,6 +23,9 @@ services:
       - traefik.http.routers.calibre.tls=true
       - traefik.http.routers.calibre.tls.certresolver=cloudflare
       - traefik.http.services.calibre.loadbalancer.server.port=8083
+      # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml).
+      # metadata.db is the Calibre library database, bind-mounted from local disk over /books.
+      - homelab.backup.sqlite=/config/app.db,/config/metadata.db
 
 
 networks:

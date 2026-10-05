@@ -20,6 +20,8 @@ services:
       - "traefik.http.routers.kuma.tls=true"
       - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
+      # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/app/data/kuma.db"
 
 volumes:
   # Pinned to the pre-existing volume (created under the old Portainer

@@ -31,6 +31,8 @@ services:
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=cloudflare"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/config/home-assistant_v2.db,/config/zigbee.db"
 
 networks:
   proxy:

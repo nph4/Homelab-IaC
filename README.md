@@ -32,6 +32,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 - **Image versions:** pinned to explicit versions everywhere, e.g. `traefik:v3.0.4`, `postgres:16`, `nextcloud:31-apache`. `ghcr.io/vert-sh/vert` intentionally stays on `latest` because it publishes no versioned tags. Stacks built from a local `Dockerfile` (`build: .`) pin their base image and packages there instead, and tag the image with the version, e.g. `ansible-control:14.4.0` (the `ansible` package version). Under Komodo they also need `pull_policy: build`, since Komodo runs `docker compose pull` first and would fail trying to pull the local tag from Docker Hub.
 - **Volumes:** named Docker volumes for stateful data; bind mounts under `/home/nelson/containers/<stack>/` on nelson-nuc, `/srv/<stack>/` on quark-vm, and `/home/kirk/containers/<stack>/` on kirks-bar.
 - **Timezone:** every container sets `TZ=America/Los_Angeles` in its `environment` block.
+- **Database backups:** a nightly job on each host (02:30, the [ansible repo](https://github.com/nph4/homelab-ansible)'s `db-backup.yml`) dumps every container labeled `homelab.backup.postgres=true` (`pg_dumpall`) or `homelab.backup.sqlite=<container paths, comma-separated>` (SQLite online backup) to `/mnt/nas/backups/db/<host>/<date>/`, keeping 14 days. It runs before CrashPlan's 03:00 scan of the NAS, so the dumps also go offsite. This covers databases only, not the files apps keep next to them (uploads, images, documents). The log is `/var/log/db-backup.log` on each host.
 
 ## Services
 
@@ -82,7 +83,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 5. If the service needs env vars beyond what labels cover, create a `.env-example` and place the real `.env` at `/home/nelson/containers/<service>/.env` on nelson-nuc
 6. For non-Docker upstreams (host IPs, Tailscale IPs), add a router + service entry to `stacks/nelson-nuc/traefik/config.yml`
 7. Use absolute paths for all volume mounts, env_file references, and secret files
-8. Set `TZ=America/Los_Angeles` in the `environment` block
+8. Set `TZ=America/Los_Angeles` in the `environment` block. If it has a Postgres or SQLite database, add the matching `homelab.backup.*` label (see Architecture)
 9. Add a Pi-hole Local DNS record for the `*.local.nelsonhickman.com` hostname, pointing at `192.168.88.101` (Traefik). Internet-facing hostnames also need a Cloudflare Tunnel public hostname and DNS record
 10. Create the stack in Komodo on the right server: repo `nph4/Homelab-IaC`, branch `main`, run directory `stacks/<host>/<service-name>`, file path `docker-compose.yml`. For a `build:` stack, also set `run_build: true` and `auto_pull: false`, and list its build-context files under `config_files`. Then deploy it once; after that, commits deploy within 5 minutes
 
