@@ -58,6 +58,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | `vert` | File format converter |
 | `ansible` | Persistent Ansible control container with a browser-based terminal (`ttyd`) into it |
 | `days-since-incident` | Small custom-built "days since last incident" counter |
+| `bookstack` | Documentation wiki (`docs.local.nelsonhickman.com`), including what lives outside this repo |
 
 **quark-vm**
 

@@ -1,0 +1,69 @@
+services:
+  bookstack-db:
+    image: mariadb:11.8.9
+    container_name: bookstack-db
+    restart: unless-stopped
+    networks:
+      - internal
+    volumes:
+      - bookstack-db:/var/lib/mysql
+    # MARIADB_PASSWORD / MARIADB_ROOT_PASSWORD
+    env_file:
+      - /home/nelson/containers/bookstack/.env
+    environment:
+      TZ: America/Los_Angeles
+      MARIADB_DATABASE: bookstack
+      MARIADB_USER: bookstack
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      # Nightly mariadb-dump to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.mysql=true"
+
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:v26.09.1-ls287
+    container_name: bookstack
+    restart: unless-stopped
+    depends_on:
+      bookstack-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+    volumes:
+      # BookStack's .env, logs, and uploaded images and attachments
+      - bookstack-config:/config
+    # APP_KEY / DB_PASSWORD
+    env_file:
+      - /home/nelson/containers/bookstack/.env
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+      APP_URL: https://docs.local.nelsonhickman.com
+      DB_HOST: bookstack-db
+      DB_PORT: "3306"
+      DB_DATABASE: bookstack
+      DB_USERNAME: bookstack
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.bookstack.rule=Host(`docs.local.nelsonhickman.com`)"
+      - "traefik.http.routers.bookstack.entrypoints=https"
+      - "traefik.http.routers.bookstack.tls=true"
+      - "traefik.http.routers.bookstack.tls.certresolver=cloudflare"
+      - "traefik.http.services.bookstack.loadbalancer.server.port=80"
+
+volumes:
+  bookstack-db:
+  bookstack-config:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge

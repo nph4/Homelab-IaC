@@ -151,6 +151,13 @@ sections:
     target: newtab
     statusCheck: true
     id: 20_600_komodo
+  - title: BookStack
+    description: Homelab documentation wiki
+    icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/svg/bookstack.svg
+    url: https://docs.local.nelsonhickman.com
+    target: newtab
+    statusCheck: true
+    id: 21_600_bookstack
 - name: Physical Devices
   icon: mdi-NetworkOutline
   displayData:
