@@ -57,6 +57,9 @@ services:
       - "traefik.http.routers.bookstack.tls=true"
       - "traefik.http.routers.bookstack.tls.certresolver=cloudflare"
       - "traefik.http.services.bookstack.loadbalancer.server.port=80"
+      # Nightly archive of uploads to the NAS (homelab-ansible playbooks/db-backup.yml): gallery images,
+      # attachments, and secure-mode images. Not all of /config, since /config/www/.env holds the secrets.
+      - "homelab.backup.files=/config/www/uploads,/config/www/files,/config/www/images"
 
 volumes:
   bookstack-db:
