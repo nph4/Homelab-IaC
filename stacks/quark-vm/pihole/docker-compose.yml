@@ -1,0 +1,58 @@
+# Secondary Pi-hole. The primary is the Raspberry Pi (pihole.lan, 192.168.88.34); nebula-sync copies its
+# lists, local DNS/CNAME records, upstreams, groups and clients here every 15 minutes, so edit records on
+# the primary only (changes made here are overwritten). Nothing here needs backing up: the primary's
+# nightly Teleporter export (homelab-ansible pihole-backup.yml) covers it.
+services:
+  pihole:
+    image: pihole/pihole:2026.09.0
+    container_name: pihole
+    restart: unless-stopped
+    ports:
+      # LAN IP only: systemd-resolved's stub already holds 127.0.0.53:53 on the host
+      - "192.168.88.42:53:53/tcp"
+      - "192.168.88.42:53:53/udp"
+      # Web UI, reached through Traefik on nelson-nuc (pihole2.local.nelsonhickman.com)
+      - "192.168.88.42:8081:80/tcp"
+    # FTLCONF_webserver_api_password
+    env_file: /home/quark/containers/pihole/.env
+    environment:
+      TZ: America/Los_Angeles
+      # Queries arrive from LAN clients via Docker's port mapping, not from the container's own subnet
+      FTLCONF_dns_listeningMode: all
+      # The container can't set the host clock, and the Pi already serves NTP
+      FTLCONF_ntp_ipv4_active: "false"
+      FTLCONF_ntp_ipv6_active: "false"
+      FTLCONF_ntp_sync_active: "false"
+    volumes:
+      - pihole-etc:/etc/pihole
+
+  nebula-sync:
+    image: lovelaze/nebula-sync:v0.11.2
+    container_name: nebula-sync
+    restart: unless-stopped
+    depends_on:
+      - pihole
+    # PRIMARY and REPLICAS (URL|password)
+    env_file: /home/quark/containers/pihole/nebula-sync.env
+    environment:
+      TZ: America/Los_Angeles
+      CRON: "*/15 * * * *"
+      RUN_GRAVITY: "true"
+      # The primary's web UI uses Pi-hole's self-signed certificate
+      CLIENT_SKIP_TLS_VERIFICATION: "true"
+      FULL_SYNC: "false"
+      SYNC_CONFIG_DNS: "true"
+      # Host-specific: the Pi listens on eth0, the container on whatever Docker gives it
+      SYNC_CONFIG_DNS_EXCLUDE: interface,listeningMode
+      SYNC_CONFIG_RESOLVER: "true"
+      SYNC_CONFIG_DATABASE: "true"
+      SYNC_GRAVITY_GROUP: "true"
+      SYNC_GRAVITY_AD_LIST: "true"
+      SYNC_GRAVITY_AD_LIST_BY_GROUP: "true"
+      SYNC_GRAVITY_DOMAIN_LIST: "true"
+      SYNC_GRAVITY_DOMAIN_LIST_BY_GROUP: "true"
+      SYNC_GRAVITY_CLIENT: "true"
+      SYNC_GRAVITY_CLIENT_BY_GROUP: "true"
+
+volumes:
+  pihole-etc:

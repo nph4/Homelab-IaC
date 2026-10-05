@@ -34,6 +34,16 @@ http:
         certResolver: cloudflare
       service: unifi
 
+    pihole2:
+      entryPoints:
+        - https
+      rule: "Host(`pihole2.local.nelsonhickman.com`)"
+      middlewares:
+        - default-headers
+      tls:
+        certResolver: cloudflare
+      service: pihole2
+
     paperless:
       entryPoints:
         - https
@@ -97,6 +107,12 @@ http:
       loadBalancer:
         servers:
           - url: "https://192.168.88.101:8443"
+        passHostHeader: true
+
+    pihole2:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.88.42:8081"
         passHostHeader: true
 
     paperless:

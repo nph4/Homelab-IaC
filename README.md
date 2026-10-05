@@ -7,7 +7,7 @@ Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose st
 ```
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
-  quark-vm/     # Proxmox VM (Tailscale IP 100.76.105.3) — paperless, crashplan, dozzle-agent
+  quark-vm/     # Proxmox VM (192.168.88.42, Tailscale IP 100.76.105.3) — paperless, crashplan, pihole, dozzle-agent
   kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
 ```
 
@@ -66,6 +66,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 |---|---|
 | `paperless` | Document management ([paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)) |
 | `crashplan` | CrashPlan backup client |
+| `pihole` | Secondary Pi-hole (DNS on `192.168.88.42`, UI `pihole2.local.nelsonhickman.com`), kept in sync with the primary on the Pi by `nebula-sync` |
 | `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
 
 **kirks-bar**
