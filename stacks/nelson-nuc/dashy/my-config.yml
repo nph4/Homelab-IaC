@@ -170,9 +170,10 @@ sections:
   - title: Pi Hole
     description: Raspberry Pi based DNS and network level ad blocking
     icon: hl-pihole
-    url: http://pi.hole
+    url: https://pihole.lan:8443/admin
     target: newtab
     statusCheck: true
+    statusCheckAllowInsecure: true
     id: 0_1568_pihole
   - title: Router
     description: Mikrotik router
