@@ -169,7 +169,7 @@ sections:
   items:
   - title: Pi Hole
     description: Raspberry Pi based DNS and network level ad blocking
-    icon: hl-pihole
+    icon: hl-pi-hole
     url: https://pihole.lan:8443/admin
     target: newtab
     statusCheck: true
