@@ -1,0 +1,120 @@
+services:
+  lldap:
+    image: lldap/lldap:v0.6.3
+    container_name: lldap
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - lldap-data:/data
+    secrets:
+      - lldap_jwt_secret
+      - lldap_key_seed
+      - lldap_admin_password
+    environment:
+      TZ: America/Los_Angeles
+      UID: "1000"
+      GID: "1000"
+      LLDAP_LDAP_BASE_DN: dc=nelsonhickman,dc=com
+      LLDAP_HTTP_URL: https://lldap.local.nelsonhickman.com
+      LLDAP_JWT_SECRET_FILE: /run/secrets/lldap_jwt_secret
+      # Changing the seed invalidates every password; it can't be regenerated.
+      LLDAP_KEY_SEED_FILE: /run/secrets/lldap_key_seed
+      # Only applied when the admin user is first created
+      LLDAP_LDAP_USER_PASS_FILE: /run/secrets/lldap_admin_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # Web UI (LAN only)
+      - "traefik.http.routers.lldap.rule=Host(`lldap.local.nelsonhickman.com`)"
+      - "traefik.http.routers.lldap.entrypoints=https"
+      - "traefik.http.routers.lldap.tls=true"
+      - "traefik.http.routers.lldap.tls.certresolver=cloudflare"
+      - "traefik.http.routers.lldap.service=lldap"
+      - "traefik.http.services.lldap.loadbalancer.server.port=17170"
+
+      # LDAPS for Jellyfin on kirks-bar: Traefik terminates TLS on :636, plain LDAP to lldap:3890
+      - "traefik.tcp.routers.lldap-ldaps.rule=HostSNI(`lldap.local.nelsonhickman.com`)"
+      - "traefik.tcp.routers.lldap-ldaps.entrypoints=ldaps"
+      - "traefik.tcp.routers.lldap-ldaps.tls=true"
+      - "traefik.tcp.routers.lldap-ldaps.tls.certresolver=cloudflare"
+      - "traefik.tcp.routers.lldap-ldaps.middlewares=lldap-kirks-bar"
+      - "traefik.tcp.routers.lldap-ldaps.service=lldap-ldap"
+      - "traefik.tcp.middlewares.lldap-kirks-bar.ipallowlist.sourcerange=192.168.88.23/32"
+      - "traefik.tcp.services.lldap-ldap.loadbalancer.server.port=3890"
+
+      # Nightly SQLite dump to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/data/users.db"
+
+  authelia:
+    image: authelia:4.39.28
+    build: ./authelia
+    container_name: authelia
+    restart: unless-stopped
+    depends_on:
+      - lldap
+    networks:
+      - internal
+      - proxy
+    volumes:
+      # db.sqlite3 (MFA registrations, encrypted with the storage key) and notification.txt
+      - authelia-config:/config
+    secrets:
+      - authelia_jwt_secret
+      - authelia_session_secret
+      - authelia_storage_encryption_key
+      - authelia_ldap_password
+    environment:
+      TZ: America/Los_Angeles
+      X_AUTHELIA_CONFIG: /etc/authelia/configuration.yml
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /run/secrets/authelia_jwt_secret
+      AUTHELIA_SESSION_SECRET_FILE: /run/secrets/authelia_session_secret
+      # Losing this makes stored TOTP and passkey registrations unreadable; it can't be regenerated.
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /run/secrets/authelia_storage_encryption_key
+      AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /run/secrets/authelia_ldap_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # Login portal (public through the cloudflared tunnel)
+      - "traefik.http.routers.authelia.rule=Host(`auth.nelsonhickman.com`)"
+      - "traefik.http.routers.authelia.entrypoints=https"
+      - "traefik.http.routers.authelia.tls=true"
+      - "traefik.http.routers.authelia.tls.certresolver=cloudflare"
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+
+      # Forward-auth middleware; protect a router with middlewares=authelia@docker
+      - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/authz/forward-auth"
+      - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
+
+      # Nightly SQLite dump to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.sqlite=/config/db.sqlite3"
+
+secrets:
+  lldap_jwt_secret:
+    file: /home/nelson/containers/auth/secrets/lldap_jwt_secret
+  lldap_key_seed:
+    file: /home/nelson/containers/auth/secrets/lldap_key_seed
+  lldap_admin_password:
+    file: /home/nelson/containers/auth/secrets/lldap_admin_password
+  authelia_jwt_secret:
+    file: /home/nelson/containers/auth/secrets/authelia_jwt_secret
+  authelia_session_secret:
+    file: /home/nelson/containers/auth/secrets/authelia_session_secret
+  authelia_storage_encryption_key:
+    file: /home/nelson/containers/auth/secrets/authelia_storage_encryption_key
+  authelia_ldap_password:
+    file: /home/nelson/containers/auth/secrets/authelia_ldap_password
+
+volumes:
+  lldap-data:
+  authelia-config:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge

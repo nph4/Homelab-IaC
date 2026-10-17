@@ -1,0 +1,73 @@
+# Authelia 4.39 configuration. Secrets come from *_FILE env vars in docker-compose.yml
+# (files under /home/nelson/containers/auth/secrets/ on nelson-nuc), never from this file.
+
+theme: auto
+
+server:
+  address: tcp://:9091/
+
+log:
+  level: info
+
+totp:
+  issuer: nelsonhickman.com
+
+webauthn:
+  display_name: Homelab
+  enable_passkey_login: true
+
+identity_validation:
+  reset_password:
+    jwt_algorithm: HS256  # secret: AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE
+
+authentication_backend:
+  password_reset:
+    disable: false
+  ldap:
+    implementation: lldap
+    address: ldap://lldap:3890
+    base_dn: dc=nelsonhickman,dc=com
+    # Service account in LLDAP group lldap_password_manager, so password resets work
+    user: uid=authelia,ou=people,dc=nelsonhickman,dc=com
+
+password_policy:
+  zxcvbn:
+    enabled: true
+    min_score: 3
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: it-tools.local.nelsonhickman.com
+      policy: two_factor
+      subject:
+        - group:admins
+        - group:users
+
+session:
+  name: authelia_session
+  inactivity: 1h
+  expiration: 12h
+  remember_me: 1M
+  # In memory: a single instance doesn't need Redis; a restart logs everyone out.
+  cookies:
+    - domain: nelsonhickman.com
+      authelia_url: https://auth.nelsonhickman.com
+
+# The login page is public, so keep brute-force regulation on.
+regulation:
+  modes:
+    - user
+  max_retries: 3
+  find_time: 2m
+  ban_time: 10m
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+# No SMTP yet: one-time codes for registering MFA devices and password resets are written here.
+# Read with: docker exec authelia cat /config/notification.txt
+notifier:
+  filesystem:
+    filename: /config/notification.txt
