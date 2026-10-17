@@ -20,6 +20,8 @@ services:
       - "traefik.http.routers.it-tools.entrypoints=https"
       - "traefik.http.routers.it-tools.tls=true"
       - "traefik.http.routers.it-tools.tls.certresolver=cloudflare"
+      # SSO login (Authelia, auth stack)
+      - "traefik.http.routers.it-tools.middlewares=authelia@docker"
 
       # Service -> container port
       - "traefik.http.services.it-tools.loadbalancer.server.port=80"

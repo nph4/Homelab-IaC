@@ -35,9 +35,25 @@ password_policy:
     enabled: true
     min_score: 3
 
+definitions:
+  network:
+    # LAN and tailnet: password only. Never add Docker ranges (172.16.0.0/12): public traffic
+    # arrives from the cloudflared container, so it would count as internal.
+    internal:
+      - 192.168.88.0/24
+      - 100.64.0.0/10
+      - fd7a:115c:a1e0::/48
+
 access_control:
   default_policy: deny
   rules:
+    - domain: it-tools.local.nelsonhickman.com
+      policy: one_factor
+      networks:
+        - internal
+      subject:
+        - group:admins
+        - group:users
     - domain: it-tools.local.nelsonhickman.com
       policy: two_factor
       subject:
