@@ -38,11 +38,15 @@ password_policy:
 definitions:
   network:
     # LAN and tailnet: password only. Never add Docker ranges (172.16.0.0/12): public traffic
-    # arrives from the cloudflared container, so it would count as internal.
+    # arrives from the cloudflared container (172.29.0.20), so it would count as internal.
     internal:
       - 192.168.88.0/24
       - 100.64.0.0/10
       - fd7a:115c:a1e0::/48
+      # proxy network gateway: tailnet clients arrive as this, since nelson-nuc's subnet route
+      # SNATs them. Safe only while cloudflared's ingress targets https://traefik:443; pointing it
+      # at https://192.168.88.101:443 would make public traffic arrive from here too.
+      - 172.29.0.1/32
 
 access_control:
   default_policy: deny
