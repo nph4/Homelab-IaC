@@ -12,6 +12,9 @@ entryPoints:
           scheme: https
   https:
     address: ":443"
+  # TCP, TLS terminated by Traefik; LLDAP for Jellyfin on kirks-bar (auth stack)
+  ldaps:
+    address: ":636"
 
 serversTransport:
   insecureSkipVerify: true
