@@ -32,7 +32,7 @@ services:
       - nextcloud-redis:/data
 
   nextcloud:
-    image: nextcloud:31-apache
+    image: nextcloud:32.0.15-apache
     container_name: nextcloud
     restart: unless-stopped
     networks:
@@ -54,7 +54,7 @@ services:
       - "traefik.http.routers.nextcloud.middlewares=default-headers@file,https-redirectscheme@file"
 
   nextcloud-cron:
-    image: nextcloud:31-apache
+    image: nextcloud:32.0.15-apache
     container_name: nextcloud-cron
     restart: unless-stopped
     networks:
