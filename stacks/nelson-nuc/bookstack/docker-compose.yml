@@ -25,7 +25,7 @@ services:
       - "homelab.backup.mysql=true"
 
   bookstack:
-    image: lscr.io/linuxserver/bookstack:v26.09.1-ls287
+    image: lscr.io/linuxserver/bookstack:v26.09.2-ls292
     container_name: bookstack
     restart: unless-stopped
     depends_on:
