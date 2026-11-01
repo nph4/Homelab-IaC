@@ -30,6 +30,9 @@ services:
       # Originals, thumbnails, encoded video and Immich's own nightly DB dumps (backups/).
       # A subdirectory of the NAS share, so nas-remount-restart (homelab-ansible) restarts this container on remount.
       - /mnt/nas/images/immich:/data
+      # External library "Hickman Family Photos" (import paths in Immich's admin settings), read-only
+      - "/mnt/nas/images/Hickman Family Photos - Nov 2024:/external/hickman-family-2024:ro"
+      - "/mnt/nas/images/Hickman Family Photos - Nov 2025:/external/hickman-family-2025:ro"
       - /etc/localtime:/etc/localtime:ro
 
     depends_on:
