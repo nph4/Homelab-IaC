@@ -8,7 +8,7 @@ Infrastructure-as-Code for my homelab. Every service runs as a Docker Compose st
 stacks/
   nelson-nuc/   # Intel NUC, primary host — most services live here
   quark-vm/     # Proxmox VM (192.168.88.42, Tailscale IP 100.76.105.3) — paperless, crashplan, pihole, dozzle-agent
-  kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, dozzle-agent
+  kirks-bar/    # OptiPlex 7040 + Quadro P1000 (192.168.88.23, Tailscale IP 100.110.243.115), GPU host — jellyfin, immich, dozzle-agent
 ```
 
 Each subdirectory under `stacks/<host>/` is one GitOps stack: a `docker-compose.yml`, plus (where needed) a `.env-example` and/or `secrets/*-example` file documenting what real values are expected. Actual secrets and `.env` files are never committed — they live directly on the host at an absolute path the compose file references. Every stack is deployed by Komodo.
@@ -27,7 +27,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 - **Tailscale:** nelson-nuc advertises the LAN (`192.168.88.0/24`) as a subnet route. Servers on that LAN (anything that receives LAN connections: kirks-bar, quark-vm, etc.) must run with `tailscale set --accept-routes=false`: accepting the route sends their replies to LAN connections out `tailscale0` instead of the NIC, so SSH, Ansible, and anything else reaching them by LAN address times out (hit on kirks-bar, 2026-09-26). Roaming clients are the opposite. The laptop (framework) keeps `--accept-routes=true` so the LAN works remotely, and a NetworkManager hook in [laptop-dotfiles](https://github.com/nph4/laptop-dotfiles) (`etc/NetworkManager/dispatcher.d/50-home-lan-local`) adds a higher-priority `ip rule` at home so LAN traffic stays local instead of going through Tailscale. The tailnet's split DNS sends `local.nelsonhickman.com` and `auth.nelsonhickman.com` to both Pi-holes (`192.168.88.34`, `192.168.88.42`), so a client without the route can't resolve those names off the LAN. nelson-nuc SNATs subnet-routed traffic, so tailnet clients reach Docker containers from the `proxy` network's gateway, `172.29.0.1`, not their `100.x` address.
 - **SSO:** the [`auth`](stacks/nelson-nuc/auth) stack runs Authelia (login portal at `auth.nelsonhickman.com`, public through the tunnel; LAN and tailnet clients reach it directly through a Pi-hole override) backed by LLDAP (users and groups, UI at `lldap.local.nelsonhickman.com`). Protect a site with the Traefik label `traefik.http.routers.<name>.middlewares=authelia@docker` **and** a matching rule in `authelia/configuration.yml`, since the default policy is deny. From the LAN or tailnet a password is enough; from anywhere else it also takes TOTP. Plan and rollout: BookStack, *Projects → SSO: Authelia + LLDAP*.
 - **TLS:** wildcard certs via Cloudflare DNS challenge (cert resolver `cloudflare`). Internal-only services live under `*.local.nelsonhickman.com`; anything internet-facing is under `*.nelsonhickman.com`.
-- **Secrets:** two patterns, both always an absolute host path (never relative: the deploy tool runs compose from its own Git clone, and anything outside the clone must be visible to Komodo's Periphery agent, under `/home/nelson/containers` on nelson-nuc):
+- **Secrets:** two patterns, both always an absolute host path (never relative: the deploy tool runs compose from its own Git clone, and anything outside the clone must be visible to Komodo's Periphery agent, under `/home/nelson/containers` on nelson-nuc, `/home/quark/containers` on quark-vm, or `/home/kirk/containers` on kirks-bar):
   - Docker `secrets:` block pointing at a file on the host, e.g. `/home/nelson/containers/traefik/cf_api_token.txt` (used by traefik, nextcloud)
   - `env_file:` pointing at a file on the host, e.g. `/home/nelson/containers/mealie/.env` (used when the upstream image expects env vars)
 - **Image versions:** pinned to explicit versions everywhere, e.g. `traefik:v3.0.4`, `postgres:16`, `nextcloud:31-apache`. `ghcr.io/vert-sh/vert` intentionally stays on `latest` because it publishes no versioned tags. Stacks built from a local `Dockerfile` (`build: .`) pin their base image and packages there instead, and tag the image with the version, e.g. `ansible-control:14.4.0` (the `ansible` package version). Under Komodo they also need `pull_policy: build`, since Komodo runs `docker compose pull` first and would fail trying to pull the local tag from Docker Hub.
@@ -60,7 +60,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | `ansible` | Persistent Ansible control container with a browser-based terminal (`ttyd`) into it |
 | `days-since-incident` | Small custom-built "days since last incident" counter |
 | `bookstack` | Documentation wiki (`docs.local.nelsonhickman.com`), including what lives outside this repo |
-| `auth` | SSO: Authelia (login portal, forward-auth, OIDC later) and LLDAP (user directory; LDAPS for Jellyfin through Traefik's `:636`) |
+| `auth` | SSO: Authelia (login portal, forward-auth, OIDC provider for Immich) and LLDAP (user directory; LDAPS for Jellyfin through Traefik's `:636`) |
 
 **quark-vm**
 
@@ -76,6 +76,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 | Stack | What it is |
 |---|---|
 | `jellyfin` | Media server, NVENC transcoding on the Quadro P1000. Routed by a static entry in `traefik/config.yml`, since Traefik can't read Docker labels on another host |
+| `immich` | Photo library (`immich.local.nelsonhickman.com`): originals on the NAS at `/mnt/nas/images/immich`, Postgres on local disk, CUDA machine learning and NVENC transcoding on the same P1000. Logs in through Authelia OIDC. Static route in `traefik/config.yml` |
 | `dozzle-agent` | Log agent feeding nelson-nuc's `dozzle` |
 
 ## Adding a service

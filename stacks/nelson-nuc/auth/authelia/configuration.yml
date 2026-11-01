@@ -1,5 +1,6 @@
-# Authelia 4.39 configuration. Secrets come from *_FILE env vars in docker-compose.yml
-# (files under /home/nelson/containers/auth/secrets/ on nelson-nuc), never from this file.
+# Authelia 4.39 configuration. Secrets come from *_FILE env vars or, where Authelia has no env var,
+# the template filter's secret function (X_AUTHELIA_CONFIG_FILTERS=template), both reading files under
+# /home/nelson/containers/auth/secrets/ on nelson-nuc, never from this file.
 
 theme: auto
 
@@ -63,6 +64,55 @@ access_control:
       subject:
         - group:admins
         - group:users
+
+identity_providers:
+  oidc:
+    # hmac_secret: AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE
+    jwks:
+      - key_id: main
+        algorithm: RS256
+        use: sig
+        key: {{ secret "/run/secrets/authelia_oidc_jwks_rsa" | mindent 10 "|" | msquote }}
+    authorization_policies:
+      # Same as the forward-auth rules: password only from the LAN or tailnet, TOTP from anywhere else
+      homelab:
+        default_policy: deny
+        rules:
+          - policy: one_factor
+            networks:
+              - internal
+            subject:
+              - group:admins
+              - group:users
+          - policy: two_factor
+            subject:
+              - group:admins
+              - group:users
+    clients:
+      - client_id: immich
+        client_name: Immich
+        # pbkdf2 digest; Immich holds the plaintext (also in secrets/immich_oidc_client_secret)
+        client_secret: '{{ secret "/run/secrets/authelia_oidc_immich_client_secret_digest" }}'
+        public: false
+        authorization_policy: homelab
+        consent_mode: implicit
+        require_pkce: true
+        pkce_challenge_method: S256
+        redirect_uris:
+          - https://immich.local.nelsonhickman.com/auth/login
+          - https://immich.local.nelsonhickman.com/user-settings
+          - app.immich:///oauth-callback
+        scopes:
+          - openid
+          - profile
+          - email
+        response_types:
+          - code
+        grant_types:
+          - authorization_code
+        id_token_signed_response_alg: RS256
+        userinfo_signed_response_alg: RS256
+        token_endpoint_auth_method: client_secret_post
 
 session:
   name: authelia_session

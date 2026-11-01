@@ -12,6 +12,10 @@ entryPoints:
           scheme: https
   https:
     address: ":443"
+    # v3 defaults readTimeout to 60s, which cuts off large Immich video uploads
+    transport:
+      respondingTimeouts:
+        readTimeout: 600s
   # TCP, TLS terminated by Traefik; LLDAP for Jellyfin on kirks-bar (auth stack)
   ldaps:
     address: ":636"

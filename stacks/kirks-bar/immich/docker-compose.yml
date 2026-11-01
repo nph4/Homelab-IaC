@@ -1,0 +1,90 @@
+# Based on Immich's release compose (v3.3.5) with hwaccel.ml.yml (cuda) and hwaccel.transcoding.yml
+# (nvenc) inlined. Upgrade by bumping all three Immich tags together after reading the release notes.
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v3.3.5
+    container_name: immich_server
+    restart: unless-stopped
+
+    ports:
+      # Traefik on nelson-nuc reaches this through a static route in traefik's config.yml
+      - "2283:2283"
+
+    # DB_PASSWORD (and POSTGRES_PASSWORD for the database service)
+    env_file: /home/kirk/containers/immich/.env
+    environment:
+      TZ: "America/Los_Angeles"
+      DB_USERNAME: postgres
+      DB_DATABASE_NAME: immich
+
+    # Quadro P1000 for NVENC/NVDEC video transcoding (set to NVENC in Immich's admin settings)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, video]
+
+    volumes:
+      # Originals, thumbnails, encoded video and Immich's own nightly DB dumps (backups/).
+      # A subdirectory of the NAS share, so nas-remount-restart (homelab-ansible) restarts this container on remount.
+      - /mnt/nas/images/immich:/data
+      - /etc/localtime:/etc/localtime:ro
+
+    depends_on:
+      - redis
+      - database
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5-cuda
+    container_name: immich_machine_learning
+    restart: unless-stopped
+    environment:
+      TZ: "America/Los_Angeles"
+    # Smart search and face recognition on the same GPU as Jellyfin; models unload after 5 min idle
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - model-cache:/cache
+    healthcheck:
+      disable: false
+
+  redis:
+    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
+    container_name: immich_redis
+    restart: unless-stopped
+    environment:
+      TZ: "America/Los_Angeles"
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich_postgres
+    restart: unless-stopped
+    env_file: /home/kirk/containers/immich/.env
+    environment:
+      TZ: "America/Los_Angeles"
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    labels:
+      # Nightly pg_dumpall to the NAS (homelab-ansible playbooks/db-backup.yml)
+      - "homelab.backup.postgres=true"
+    volumes:
+      # Local disk: Immich doesn't support its database on a network share
+      - /home/kirk/containers/immich/postgres:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      disable: false
+
+volumes:
+  model-cache:
