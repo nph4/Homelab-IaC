@@ -158,6 +158,13 @@ sections:
     target: newtab
     statusCheck: true
     id: 21_600_bookstack
+  - title: Immich
+    description: Photo library, GPU-accelerated on kirks-bar
+    icon: hl-immich
+    url: https://immich.local.nelsonhickman.com/
+    target: newtab
+    statusCheck: true
+    id: 22_600_immich
 - name: Physical Devices
   icon: mdi-NetworkOutline
   displayData:
