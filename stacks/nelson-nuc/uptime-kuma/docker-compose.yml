@@ -19,6 +19,9 @@ services:
       - "traefik.http.routers.kuma.entrypoints=https"
       - "traefik.http.routers.kuma.tls=true"
       - "traefik.http.routers.kuma.tls.certresolver=cloudflare"
+      # Authelia login; /api/push/ is bypassed in Authelia's access rules (nebula-sync heartbeat).
+      # Kuma's own login is disabled in its settings, so Authelia is the only login.
+      - "traefik.http.routers.kuma.middlewares=authelia@docker"
       - "traefik.http.services.kuma.loadbalancer.server.port=3001"
       # Nightly SQLite backup to the NAS (homelab-ansible playbooks/db-backup.yml)
       - "homelab.backup.sqlite=/app/data/kuma.db"
