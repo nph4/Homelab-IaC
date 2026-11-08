@@ -28,7 +28,7 @@ Standing rules for working in this repo. Keep this file short: it's loaded into 
 
 ## SSO (Authelia + LLDAP, stack `auth`)
 
-- Forward-auth cutover checklist, for every site: Traefik label `middlewares=authelia@docker`; add the hostname to `&forward_auth_sites` in `auth/authelia/configuration.yml` (default policy is deny); set **HTTP Basic Auth** with the LLDAP `monitoring` account `uptime-kuma` on its Uptime Kuma monitor (the user does this in Kuma's UI); add `statusCheckHeaders` with the `__MONITORING_BASIC_AUTH__` placeholder to its Dashy tile. Test in a private window (PWAs serve from cache).
+- Forward-auth cutover checklist, for every site: Traefik label `middlewares=authelia@docker`; add the hostname to `&forward_auth_sites` in `auth/authelia/configuration.yml` (default policy is deny); set **HTTP Basic Auth** with the LLDAP `monitoring` account `uptime-kuma` plus **Max. Redirects 0** on its Uptime Kuma monitor (the user does this in Kuma's UI; following redirects would read Authelia's login page as `200`). Monitor the app's own path that answers `200` directly; add `statusCheckHeaders` with the `__MONITORING_BASIC_AUTH__` placeholder to its Dashy tile. Test in a private window (PWAs serve from cache).
 - Changing Authelia's config restarts it and logs everyone out. Three wrong passwords in 2 min ban a user for 10 min.
 - Never trust Docker ranges as `internal`: public traffic arrives from cloudflared (`172.29.0.20`). `172.29.0.1` is trusted only while cloudflared's ingress targets `https://traefik:443`.
 - Apps with mobile clients use OIDC (policy `homelab`), not forward-auth. Plan and progress: BookStack *Projects → SSO: Authelia + LLDAP*.
