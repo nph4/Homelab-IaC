@@ -52,14 +52,32 @@ definitions:
 access_control:
   default_policy: deny
   rules:
-    - domain: it-tools.local.nelsonhickman.com
+    # Uptime Kuma push monitors (nebula-sync on quark-vm). The token in the path is the secret.
+    - domain: kuma.local.nelsonhickman.com
+      resources:
+        - '^/api/push/[A-Za-z0-9]+([?].*)?$'
+      policy: bypass
+    # Monitoring account (LLDAP user uptime-kuma, group monitoring): Uptime Kuma monitors and Dashy
+    # status checks send it as HTTP Basic auth. Basic auth is one factor only, so it's limited to
+    # the LAN/tailnet; from anywhere else no rule matches the group and the request is denied.
+    # Add each new forward-auth hostname here as well as below.
+    - domain: &forward_auth_sites
+        - it-tools.local.nelsonhickman.com
+        - dashy.local.nelsonhickman.com
+        - kuma.local.nelsonhickman.com
+      policy: one_factor
+      networks:
+        - internal
+      subject:
+        - group:monitoring
+    - domain: *forward_auth_sites
       policy: one_factor
       networks:
         - internal
       subject:
         - group:admins
         - group:users
-    - domain: it-tools.local.nelsonhickman.com
+    - domain: *forward_auth_sites
       policy: two_factor
       subject:
         - group:admins
