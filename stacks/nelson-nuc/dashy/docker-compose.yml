@@ -7,6 +7,9 @@ services:
     container_name: dashy
     restart: unless-stopped
 
+    # MONITORING_BASIC_AUTH for status checks behind Authelia (see dashy-start.sh)
+    env_file: /home/nelson/containers/dashy/.env
+
     environment:
       TZ: America/Los_Angeles
       NODE_ENV: production
@@ -21,6 +24,7 @@ services:
       - "traefik.http.routers.dashy.entrypoints=https"
       - "traefik.http.routers.dashy.tls=true"
       - "traefik.http.routers.dashy.tls.certresolver=cloudflare"
+      - "traefik.http.routers.dashy.middlewares=authelia@docker"
       - "traefik.http.services.dashy.loadbalancer.server.port=8080"
 
     healthcheck:

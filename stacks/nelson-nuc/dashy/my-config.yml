@@ -52,6 +52,9 @@ sections:
     url: https://kuma.local.nelsonhickman.com
     target: newtab
     statusCheck: true
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 6_600_uptimekuma
   - title: Crashplan
     description: Code 42's backup utility
@@ -74,6 +77,9 @@ sections:
     url: https://it-tools.local.nelsonhickman.com
     target: newtab
     statusCheck: true
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 9_600_ittools
   - title: Calibre Web
     description: web based e-reader
