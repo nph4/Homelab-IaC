@@ -38,4 +38,4 @@ Reactive Resume v5.0.11 renamed several required environment variables. The cont
 
 ## Future
 
-Redeploy via Portainer's local editor with the updated compose + new `.env` path, confirm the app still works end-to-end (login, resume editor, PDF export via chrome/browserless, storage via minio), then connect this stack to Portainer GitOps (it's already in the Phase 3 list in CLAUDE.md) so future compose changes come from the git repo automatically.
+Redeploy via Portainer's local editor with the updated compose + new `.env` path, confirm the app still works end-to-end (login, resume editor, PDF export via chrome/browserless, storage via minio), then connect this stack to Portainer GitOps (it's already in the Phase 3 list in docs/history.md) so future compose changes come from the git repo automatically.

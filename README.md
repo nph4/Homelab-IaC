@@ -94,7 +94,7 @@ A few things are always bootstrapped by hand, not by GitOps, since they're prere
 
 ## More context
 
-[`CLAUDE.md`](CLAUDE.md) is Claude Code's working notes for this repo: a detailed log of what broke, what got fixed, and why. Worth checking if a service starts behaving unexpectedly after a redeploy, since it often explains prior drift between what's live and what's in the repo. [`Komodo-Migration.md`](Komodo-Migration.md) and [`Komodo-PoC.md`](Komodo-PoC.md) record how the repo moved to its current deploy tool.
+[`docs/history.md`](docs/history.md) is a detailed log of what broke, what got fixed, and why (it was `CLAUDE.md` until 2026-11-08; [`CLAUDE.md`](CLAUDE.md) now holds only the standing rules for Claude Code). Worth checking if a service starts behaving unexpectedly after a redeploy, since it often explains prior drift between what's live and what's in the repo. [`Komodo-Migration.md`](Komodo-Migration.md) and [`Komodo-PoC.md`](Komodo-PoC.md) record how the repo moved to its current deploy tool.
 
 ## Long-Term TODO
 - Implement an authentication suite (in progress: Authelia + LLDAP, see the SSO bullet above)
