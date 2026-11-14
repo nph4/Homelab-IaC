@@ -440,3 +440,12 @@ Commit `a2b6dbd`: `middlewares=authelia@docker` on the four routers (on LLDAP, t
 - **Verified live:** all seven forward-auth sites send a request with no session to the portal (`302`), and the monitoring account gets `200`, except Kuma's `/`, which returns Kuma's own `302` to `/dashboard`. **A Kuma monitor with Max. Redirects 0 must use `/dashboard`.**
 - **vert pinned to `sha-257bcb3`.** Upstream still has no release tags (only `main`, `latest`, `sha-<commit>`). The `sha-` tags are immutable, and this one had the digest already running. To update vert, pick a newer `sha-` tag.
 - **Monitoring password exposed:** `curl -u ... -w '%{redirect_url}'` prints the redirect URL with the credentials in it, so the `uptime-kuma` password appeared in a Claude Code transcript. Never print `redirect_url` or `-v` output from a request made with `-u`.
+
+## SSO: ansible-terminal and the Traefik dashboard behind Authelia; step 3 done (2026-11-14)
+
+Commits `a98ce3c` and `14eae0c`, done remotely over the tailnet (SSH and Komodo's `192.168.88.101:9120` don't go through Traefik, so a rollback path was available the whole time).
+
+- **ansible-terminal requires TOTP from every network** (the user's call: it's a root shell on a node that reaches every host). It has its own first rule (`two_factor`, `group:admins`) and stays out of `forward_auth_sites`, so the monitoring account gets `403`. Its Kuma monitor and Dashy tile accept `302` (`statusCheckAcceptCodes`), with no credential.
+- **Traefik dashboard:** `traefik-secure` moved to `authelia@docker`. The recreate at 10:40:14 PST gave no `ERR` lines and the same status codes on all 30 routed hosts. `/` is an open `301`, so checks use `/dashboard/`.
+- **Break-glass:** `traefik-auth@file` and `dashboard_htpasswd.txt` are kept. If Authelia is down, switch either router's middleware back to it.
+- My first wait loop for the Komodo deploy never fired: zsh rejects `\>` inside `[ ]`. Match on a label value with `case` instead.
