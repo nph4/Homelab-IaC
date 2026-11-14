@@ -49,5 +49,5 @@ Standing rules for working in this repo. Keep this file short: it's loaded into 
 
 - `TZ=America/Los_Angeles` in every stack; report times in Pacific, never UTC.
 - Spell out "Home Assistant" (never "HA", which means High Availability).
-- Never print secret files, even through a redaction `sed`; show key names and value lengths only. Give the user commands to read a secret in their own terminal (not via `!`).
+- Never print secret files, even through a redaction `sed`; show key names and value lengths only. Never print `-w '%{redirect_url}'` or `-v` output from a `curl -u` request: curl puts the credentials in the URL. Give the user commands to read a secret in their own terminal (not via `!`).
 - If the approach of an approved plan changes, stop and ask again.
