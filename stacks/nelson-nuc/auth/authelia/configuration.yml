@@ -65,6 +65,10 @@ access_control:
         - it-tools.local.nelsonhickman.com
         - dashy.local.nelsonhickman.com
         - kuma.local.nelsonhickman.com
+        - dozzle.local.nelsonhickman.com
+        - vert.local.nelsonhickman.com
+        - days-since.local.nelsonhickman.com
+        - lldap.local.nelsonhickman.com
       policy: one_factor
       networks:
         - internal

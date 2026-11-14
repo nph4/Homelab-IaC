@@ -33,6 +33,7 @@ services:
       - "traefik.http.routers.lldap.tls=true"
       - "traefik.http.routers.lldap.tls.certresolver=cloudflare"
       - "traefik.http.routers.lldap.service=lldap"
+      - "traefik.http.routers.lldap.middlewares=authelia@docker"
       - "traefik.http.services.lldap.loadbalancer.server.port=17170"
 
       # LDAPS for Jellyfin on kirks-bar: Traefik terminates TLS on :636, plain LDAP to lldap:3890

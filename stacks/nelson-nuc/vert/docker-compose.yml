@@ -2,7 +2,8 @@ version: "3.8"
 
 services:
   vert:
-    image: ghcr.io/vert-sh/vert:latest
+    # No release tags upstream; sha-<commit> tags are immutable. Bump by picking a newer sha- tag.
+    image: ghcr.io/vert-sh/vert:sha-257bcb3
     container_name: vert
     restart: unless-stopped
 
@@ -21,8 +22,7 @@ services:
       - "traefik.http.routers.vert.tls=true"
       - "traefik.http.routers.vert.tls.certresolver=cloudflare"
 
-      # Optional: if you want your standard headers middleware
-      # - "traefik.http.routers.vert.middlewares=default-headers@file"
+      - "traefik.http.routers.vert.middlewares=authelia@docker"
 
       - "traefik.http.services.vert.loadbalancer.server.port=80"
 

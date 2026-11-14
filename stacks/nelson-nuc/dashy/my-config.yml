@@ -17,6 +17,9 @@ sections:
     url: https://dozzle.local.nelsonhickman.com/
     target: newtab
     statusCheck: true
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 1_600_dozzle
   - title: Home Assistant
     description: Home automation tool
@@ -93,6 +96,9 @@ sections:
     icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/svg/vert.svg
     url: https://vert.local.nelsonhickman.com
     statusCheck: true
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 11_600_vert
   - title: Traefik
     description: Reverse proxy and SSL termination
@@ -142,6 +148,9 @@ sections:
     url: https://days-since.local.nelsonhickman.com
     target: newtab
     statusCheck: true
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 18_600_dayssinceinc
   - title: AdventureLog
     description: Self-hosted travel and adventure logging

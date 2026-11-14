@@ -22,6 +22,7 @@ services:
       - "traefik.http.routers.days-since-incident.entrypoints=https"
       - "traefik.http.routers.days-since-incident.tls=true"
       - "traefik.http.routers.days-since-incident.tls.certresolver=cloudflare"
+      - "traefik.http.routers.days-since-incident.middlewares=authelia@docker"
 
       # Service
       - "traefik.http.services.days-since-incident.loadbalancer.server.port=5000"
