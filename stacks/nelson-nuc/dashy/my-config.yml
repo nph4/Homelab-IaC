@@ -134,6 +134,8 @@ sections:
     url: https://ansible.local.nelsonhickman.com
     target: newtab
     statusCheck: true
+    # Needs TOTP, so no credential can pass: 302 to the portal shows Traefik and Authelia answer, not ttyd
+    statusCheckAcceptCodes: '302'
     id: 16_600_ansibletermin
   - title: Wallos
     description: Personal subscription and expense tracker

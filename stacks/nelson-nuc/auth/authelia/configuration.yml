@@ -52,6 +52,13 @@ definitions:
 access_control:
   default_policy: deny
   rules:
+    # Ansible web terminal: a root shell on the control node, which reaches every host.
+    # Admins only, TOTP from every network (LAN and tailnet included). Kept out of
+    # forward_auth_sites so users and the monitoring account fall through to deny.
+    - domain: ansible.local.nelsonhickman.com
+      policy: two_factor
+      subject:
+        - group:admins
     # Uptime Kuma push monitors (nebula-sync on quark-vm). The token in the path is the secret.
     - domain: kuma.local.nelsonhickman.com
       resources:
@@ -69,6 +76,7 @@ access_control:
         - vert.local.nelsonhickman.com
         - days-since.local.nelsonhickman.com
         - lldap.local.nelsonhickman.com
+        - traefik-dashboard.local.nelsonhickman.com
       policy: one_factor
       networks:
         - internal
