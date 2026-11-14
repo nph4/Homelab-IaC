@@ -106,6 +106,11 @@ sections:
     url: https://traefik-dashboard.local.nelsonhickman.com
     target: newtab
     statusCheck: true
+    # / is an open 301 to /dashboard/, so check the dashboard itself
+    statusCheckUrl: https://traefik-dashboard.local.nelsonhickman.com/dashboard/
+    # Monitoring account through Authelia; filled in at startup by dashy-start.sh
+    statusCheckHeaders:
+      Authorization: Basic __MONITORING_BASIC_AUTH__
     id: 12_600_traefik
   - title: Nextcloud
     description: Self-hosted file sync and collaboration platform
